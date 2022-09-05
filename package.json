@@ -1,7 +1,7 @@
 {
-  "name": "StarTrooper",
+  "name": "HabitTask",
   "version": "1.0.0",
-  "description": "A Phaser 3 Space Shooter Game",
+  "description": "A Phaser 3 Task",
   "main": "src/index.js",
   "scripts": {
     "build": "webpack",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CoreForce2000/HabitTaskErsche.git"
+    "url": "git+https://git.heroku.com/habit-task.git"
   },
   "license": "MIT",
   "licenseUrl": "http://www.opensource.org/licenses/mit-license.php",
   "bugs": {
-    "url": "https://github.com/CoreForce2000/HabitTaskErsche.git/issues"
+    "url": "https://git.heroku.com/habit-task.git/issues"
   },
-  "homepage": "https://github.com/CoreForce2000/HabitTaskErsche",
+  "homepage": "https://git.heroku.com/habit-task",
   "devDependencies": {
     "canvas": "^2.1.0",
     "phaser": "^3.3.0",
