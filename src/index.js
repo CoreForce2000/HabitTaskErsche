@@ -42,7 +42,7 @@ function general_config(speed) {
         collect_sound: "diamond",
 
 
-        debug_mode: true
+        debug_mode: false
     }
 
 }
