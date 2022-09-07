@@ -824,7 +824,7 @@ class Training extends Phaser.Scene {
     }
 
     debug(msg) {
-        if(this.debug_mode) {
+        if(general_config(1).debug_mode) {
             console.log(`DEBUG:${msg}`)
         }
     }
@@ -1074,7 +1074,7 @@ class Game extends Phaser.Scene {
         this.speedText.setOrigin(0.5)
         this.speedText.visible = false
         
-        if(this.debug) {
+        if(general_config(1).debug_mode) {
             this.speedText.visible = true
         }
 
