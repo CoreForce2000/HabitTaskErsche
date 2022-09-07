@@ -594,7 +594,7 @@ class Study extends Phaser.Scene {
                 this.main_text.setText('Practise Trial\n\nPress SPACE to continue');
             }
             else if(this.slide == 3) {
-                this.scene.launch('Training', { successive_correct_required: 1, rythm_list: [[2,1,1]]})
+                this.scene.launch('Training', { successive_correct_required: 1, rythm_list: [[2,1,1],[2,1,1],[1,1,2],[1,1,2],[1,2,1],[1,2,1]]})
                 this.scene.pause()
 
                 this.main_text.setText('Loading Task...');
