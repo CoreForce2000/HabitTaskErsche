@@ -553,7 +553,7 @@ class Study extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('white', 'images/background_title.jpg');
+        this.load.image('white', 'assets/background_title.jpg');
     }
 
     create(data) {
@@ -699,9 +699,9 @@ class Training extends Phaser.Scene {
     }
     
     preload() {
-        this.load.image('whitescreen', 'images/background_title.jpg');
-        this.load.image('r_key', 'images/r_key.png');
-        this.load.audio('tap', ['sounds/chisel.mp3'])
+        this.load.image('whitescreen', 'assets/background_title.jpg');
+        this.load.image('r_key', 'assets/r_key.png');
+        this.load.audio('tap', ['assets/chisel.mp3'])
     }
 
 
@@ -876,17 +876,17 @@ class Game extends Phaser.Scene {
     }
     
     preload() {
-        this.load.image('cyanEgg', 'images/cyanEgg.png');
-        this.load.image('blueEgg', 'images/blueEgg.png');
-        this.load.image('redEgg', 'images/redEgg.png');
-        this.load.image('yellowEgg', 'images/yellowEgg.png');
-        this.load.image('diamond', 'images/diamond.png');
-        this.load.image('fail', 'images/fail.png');
-        this.load.image('woods', 'images/background.jpg');
-        this.load.image('safe', 'images/safe.png');
-        this.load.image('white', 'images/background_title.jpg');
-        this.load.audio('tap', ['sounds/chisel.mp3'])
-        this.load.audio('diamond', ['sounds/diamond.mp3'])
+        this.load.image('cyanEgg', 'assets/cyanEgg.png');
+        this.load.image('blueEgg', 'assets/blueEgg.png');
+        this.load.image('redEgg', 'assets/redEgg.png');
+        this.load.image('yellowEgg', 'assets/yellowEgg.png');
+        this.load.image('diamond', 'assets/diamond.png');
+        this.load.image('fail', 'assets/fail.png');
+        this.load.image('woods', 'assets/background.jpg');
+        this.load.image('safe', 'assets/safe.png');
+        this.load.image('white', 'assets/background_title.jpg');
+        this.load.audio('tap', ['assets/chisel.mp3'])
+        this.load.audio('diamond', ['assets/diamond.mp3'])
     }
 
     generateEggLocations() {
