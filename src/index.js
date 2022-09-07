@@ -10,8 +10,8 @@ var general_config = {
 
     egg_size: 0.2,
 
-    egg_drop_frequency:2000,
-    egg_exist_duration: 5000,
+    egg_drop_frequency:3000,
+    egg_exist_duration: 3500,
     egg_stay_after_collect_duration: 0,
 
     diamond_exist_duration: 1500,
@@ -42,6 +42,92 @@ var general_config = {
 }
 
 
+var slide_text = {
+
+    welcome: `Welcome
+    
+Press SPACE to continue`,
+
+    practice1:`You are about to begin the practise phase.
+In each round, you will first hear a rythm. You will then be 
+promted to replicate that rythm by tapping any key on your keyboard, 
+or clicking in the correct rythm. using your mouse.
+You will finally be informed about whether the rythm was correct or incorrect.
+The practise round will end once you have mastered all the rythms
+
+When you are ready, press SPACE to begin training`,
+
+    phase1_p1:`Now that you have learned all the rythms, you can begin 
+the first phase of the study`,
+
+    phase1_p2:`You are on an egg hunt to collect diamonds
+that are hidden in eggs. To open an egg, you have to 
+hover over it and tap or click one of the previously 
+learned rythms. You need to find out by trial and error 
+which rhythm is associated with which egg. 
+Some eggs might not have any associated rythm.
+If you are correct, your will see a diamond and your 
+score will increase, however if you are incorrect,
+nothing will happen. Your goal is to collect as many diamonds as possible.
+
+When you are ready, press SPACE to begin`,
+
+    phase2_p1:`Thank you for your participation, you have successfully
+Phase 1 of the study. We will now proceed to Phase 2.
+    
+Press SPACE to continue to the next slide`,
+
+    phase2_p2:`Again, eggs
+will appear on the screen and need to be collected by hovering
+over the desired egg and tapping or clicking the associated rythm.
+However, some eggs that previously contained a diamond might now
+be empty. As previously, your goal is to collect as many diamonds as possible.
+
+When you are ready, press SPACE to begin`,
+
+    practice_2_and_phase_3_p1:`You have successfully completed Phase 2.
+    
+Press SPACE to continue to the next slide`,
+
+    practice_2_and_phase_3_p2:`You will now complete another practise round,
+directly followed by a egg collection phase.
+You will be asked to replicate the old rythms along with some new ones. 
+As in the previous training round, you will first hear the rythm, 
+then be promted to replicate it using your keyboard or mouse.
+
+Press SPACE to continue to the next slide`,
+
+    practice_2_and_phase_3_p3:`In the egg collection phase, your goal is
+as in previous trials to collect as many eggs as possible
+by hovering over a desired egg and tapping the appropriate
+rythm. However, some of the previously empty eggs might now
+contain a diamond, and some eggs may now have different rythms
+necessary to collect the diamond.
+
+Press SPACE to continue to the next slide`,
+
+    practice_2_and_phase_3_p4:`Again, you need to use trial and error
+to discover which eggs contain a diamond, and what
+rythm will open the egg to reveal a diamond.
+When you press SPACE, you will begin the training round. After
+mastering all the rythms, you will directly begin the egg 
+collection phase will begin without another promt. 
+
+When you are ready, press SPACE to begin`,
+
+    phase4:`Thank you for your engagement so far.
+We will now initiate the fourth and final round of 
+egg collection in this study. As before, please collect
+as many eggs as possible using the correct rythm.
+Some of the eggs that previously contained a diamond however
+may now be empty. Please collect as many diamonds as possbile.
+
+When you are ready, press SPACE to begin`,
+
+    finish:`Thank you for participating!
+Please inform the researcher for further instructions.`
+
+}
 
 
 
@@ -229,13 +315,17 @@ export class ListManager {
         this.log(` >> failed: ${this.failed_list}`)
     }
 
+    hasItems() {
+        return (this.invisible_list.length > 0)
+    }
 
     getRandom() {
+        if(this.invisible_list.length > 0) {
+            var item = arrayRemoveRandom(this.invisible_list)
+            this.visible_list.push(item)
 
-        var item = arrayRemoveRandom(this.invisible_list)
-        this.visible_list.push(item)
-
-        return item
+            return item
+        }
     }
 
 
@@ -511,7 +601,6 @@ export class RythmManager {
 
 
 
-
 //         GGGGGGGGGGGGG     OOOOOOOOO     
 //      GGG::::::::::::G   OO:::::::::OO   
 //    GG:::::::::::::::G OO:::::::::::::OO 
@@ -531,6 +620,9 @@ export class RythmManager {
 
 
 
+var participant_id = 0
+var trial_id = 0
+
 class Study extends Phaser.Scene {
     constructor() {
       super('Study')
@@ -548,8 +640,8 @@ class Study extends Phaser.Scene {
     }
     
     init() {
-        this.prev_slide = 0
-        this.slide = 1
+        this.prev_slide = -1
+        this.slide = 0
     }
 
     preload() {
@@ -557,9 +649,45 @@ class Study extends Phaser.Scene {
     }
 
     create(data) {
+
+        let element = document.getElementById('input-box')
+
+        for (let i = 0; i < element.children.length; i++) {
+                      
+            // it is an input element
+            if(element.children[i].name == 'id'){
+                element.children[i].addEventListener('input',()=>{
+                    participant_id = element.children[i].value            
+                })
+            }
+
+            // it is an input element
+            if(element.children[i].name == 'trial'){
+                element.children[i].addEventListener('input',()=>{
+                    trial_id = element.children[i].value  
+                })
+            }
+                
+            // it is the button
+            else {
+                var this_scene = this
+                element.children[i].addEventListener('click',()=>{
+                    element.style.display = 'none'
+                    this.slide++
+                    
+                    this.input.keyboard.on('keydown-SPACE', function (event) {
+                        this_scene.slide++
+                    });
+                })
+                }
+            }
+
+
+
+
         this.add.image(general_config.width/2, general_config.height/2, "white").setOrigin(0.5);
 
-        this.main_text = this.add.text(general_config.width/2, general_config.height/2, 'Welcome\n\n[Press SPACE to continue]', { fontSize: '40px', fill: '#000', align: 'center', fontFamily: "calibri"});
+        this.main_text = this.add.text(general_config.width/2, general_config.height/2, '', { fontSize: '40px', fill: '#000', align: 'center', fontFamily: "calibri"});
         this.main_text.setOrigin(0.5)
         this.debug_text = this.add.text(general_config.width/2, general_config.height - (general_config.height/8), '', { fontSize: '35px', fill: '#C00', align: 'center', fontFamily: "calibri"});
         this.debug_text.setOrigin(0.5)
@@ -572,11 +700,6 @@ class Study extends Phaser.Scene {
             3:"yellow egg keeps valued outcome",
             4:"cyan egg still no outcome"
         }
-
-        var this_scene = this
-        this.input.keyboard.on('keydown-SPACE', function (event) {
-            this_scene.slide++
-        });
     }
 
     
@@ -585,38 +708,73 @@ class Study extends Phaser.Scene {
             this.prev_slide = this.slide
 
             console.log("slide", this.slide)
-            
 
-            if(this.slide == 1) {
-                this.main_text.setText('Welcome\n\nPress SPACE to continue');
-            }
-            else if(this.slide == 2) {
-                this.main_text.setText('Practise Trial\n\nPress SPACE to continue');
-            }
-            else if(this.slide == 3) {
-                this.scene.launch('Training', { successive_correct_required: 1, rythm_list: [[2,1,1],[2,1,1],[1,1,2],[1,1,2],[1,2,1],[1,2,1]]})
-                this.scene.pause()
+            if(this.slide == 0) {
+                this.main_text.setText('');
+            }else if(this.slide == 1) {
+                                        this.main_text.setText(slide_text.welcome);
+            }else if(this.slide == 2) {
+                                        this.main_text.setText(slide_text.practice1);
+            }else if(this.slide == 3) {
+                                        this.scene.launch('Training', { successive_correct_required: 1, rythm_list: [[2,1,1]]}) //,[2,1,1],[1,1,2],[1,1,2],[1,2,1],[1,2,1]
+                                        this.scene.pause()
 
-                this.main_text.setText('Loading Task...');
-                this.slide++
-            }
-            else if(this.slide == 4) {
-                this.main_text.setText('Phase 1\n\nPress SPACE to continue');
-            }
-            else if(this.slide == 5) {
-                this.scene.launch('Game', { phase_id: 1, num_egg_per_color: 3, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,100,1]}, distractor_list: ["cyanEgg"]})
-                this.scene.pause()
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
+            }else if(this.slide == 4) {
+                                        this.main_text.setText(slide_text.phase1_p1);
+            }else if(this.slide == 5) {
+                                        this.main_text.setText(slide_text.phase1_p2);
+            }else if(this.slide == 6) {
+                                        this.scene.launch('Game', { phase_id: 1, num_egg_per_color: 6, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,100,1]}, distractor_list: ["cyanEgg"]})
+                                        this.scene.pause()
 
-                this.main_text.setText('Loading Task...');
-                this.slide++
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
+            }else if(this.slide == 7) {
+                                        this.main_text.setText(slide_text.phase2_p1);
+            }else if(this.slide == 8) {
+                                        this.main_text.setText(slide_text.phase2_p2);
+            }else if(this.slide == 9) {
+                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: 6, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,100,1]}, distractor_list: ["cyanEgg"]})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
+            }else if(this.slide == 10) {
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p1);
+            }else if(this.slide == 11) {
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
+            }else if(this.slide == 12) {
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p3);
+            }else if(this.slide == 13) {
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
+            }else if(this.slide == 14) {
+                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: 6, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,2], "cyanEgg":[2,1,1]}, distractor_list: []})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
+            }else if(this.slide == 15) {
+                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: 6, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,2], "cyanEgg":[2,1,1]}, distractor_list: []})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
+            }else if(this.slide == 16) {
+                                        this.main_text.setText(slide_text.phase4);
+            }else if(this.slide == 17) {
+                                        this.scene.launch('Game', { phase_id: 1, num_egg_per_color: 6, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,100,1]}, distractor_list: ["cyanEgg"]})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++         
+            }else if(this.slide == 18) {
+                                        this.main_text.setText(slide_text.finish);
+                                        exportToCsv(game_data_columns, game_data)
             }
-            else if(this.slide == 6) {
-                this.main_text.setText('Phase 2\n\nPress SPACE to continue');
-            }
-            else if(this.slide == 7) {
-                this.main_text.setText('Phase 2\n\nPress SPACE to continue');
-                this.debug_text.setText(`Researchers note: You have been assigned to\ngroup ${this.group_assigned} (in phase 2 of the Design spec)\n- ${this.groups[this.group_assigned]} -`)
-            }
+
+            `
             else if(this.slide == 8) {
                 if(this.group_assigned == 1) {
                     this.scene.launch('Game', { phase_id:2, num_egg_per_color: 3, rythm_list: {"blueEgg":[1,100,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,100,1]}, distractor_list: ["cyanEgg", "blueEgg"]})
@@ -636,13 +794,7 @@ class Study extends Phaser.Scene {
                 this.debug_text.setText("")
                 this.slide++
             }
-            else if(this.slide == 9) {
-                this.main_text.setText('Thank you for participating!\n\nPress SPACE to finish');
-
-                exportToCsv(game_data_columns, game_data)
-
-
-            }
+            `
 
         }
     }
@@ -713,13 +865,13 @@ class Training extends Phaser.Scene {
         this.rythm_manager = new RythmManager(this)
 
         this.screen_obj = this.add.image(general_config.width/2,general_config.height/2, "whitescreen")
-        this.screen_obj.setInteractive({ useHandCursor: true })
 
         this.training_text = this.add.text(general_config.width/2,general_config.height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
         this.training_text.setOrigin(0.5);
 
         this.r_key = this.add.image(general_config.width/2,general_config.height/2, "r_key")
         this.r_key.setAlpha(0.5)
+        this.r_key.setInteractive({ useHandCursor: true })
 
 
     }
@@ -775,7 +927,7 @@ class Training extends Phaser.Scene {
 
                 var this_this = this
 
-                this.rythm_manager.addRythmListener(this.screen_obj, rythm, "tap", true, function(successful) {
+                this.rythm_manager.addRythmListener(this.r_key, rythm, "tap", true, function(successful) {
                     if(successful) {
                         this_this.training_text.setText("Correct")
                         this_this.r_key.setAlpha(0)
@@ -790,7 +942,7 @@ class Training extends Phaser.Scene {
                     }
                     this_this.round++
                 })
-                this.training_text.setText("Please replicate the rythm\nyou have just heard, in any speed you like,\nby tapping any key on the keyboard for every `tap` in that rythm")
+                this.training_text.setText("Please replicate the rythm\nyou have just heard, in any speed you like,\nby tapping the R key on the keyboard for every `tap` in that rythm")
                 this.r_key.setAlpha(0.5)
                 this.r_key.setOrigin(0.5, -1.0)
 
@@ -842,7 +994,7 @@ class Training extends Phaser.Scene {
 
 
 
-var game_data_columns = ["phase", "ts", "egg", "event", "input_rythm", "actual_rythm", "error"]
+var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "event", "input_rythm", "actual_rythm", "error"]
 var game_data = []
 
 class Game extends Phaser.Scene {
@@ -938,26 +1090,31 @@ class Game extends Phaser.Scene {
         this.debug("-----------------------------------")
         var this_scene = this
 
-        var egg = this.egg_manager.getRandom()
-        var loc = this.location_manager.getRandom()
-
-        var egg_obj = this.add.image(loc.x, loc.y, egg)
-        egg_obj.setScale(general_config.egg_size).setInteractive({ useHandCursor: true })
-
-
-        //Disappear Timer
-        var disappear_timer = this.time.addEvent({
-            delay: general_config.egg_exist_duration,
-            callback: this.removeEgg, args:[egg_obj], callbackScope: this});
-        
-
-        //Collect Listener
-        this.rythm_manager.addRythmListener(egg_obj, this.rythm_list[egg], "tap", false, function(successful, rythm_obj) {
-            this_scene.removeEgg(egg_obj, true, successful, rythm_obj)
-            disappear_timer.remove(false)
-        })
-
-        this.debug("-----------------------------------")
+        if(this.egg_manager.hasItems()) {
+            var egg = this.egg_manager.getRandom()
+            var loc = this.location_manager.getRandom()
+    
+            var egg_obj = this.add.image(loc.x, loc.y, egg)
+            egg_obj.setScale(general_config.egg_size).setInteractive({ useHandCursor: true })
+    
+    
+            //Disappear Timer
+            var disappear_timer = this.time.addEvent({
+                delay: general_config.egg_exist_duration,
+                callback: this.removeEgg, args:[egg_obj], callbackScope: this});
+            
+    
+            //Collect Listener
+            this.rythm_manager.addRythmListener(egg_obj, this.rythm_list[egg], "tap", false, function(successful, rythm_obj) {
+                this_scene.removeEgg(egg_obj, true, successful, rythm_obj)
+                disappear_timer.remove(false)
+            })
+    
+            this.debug("-----------------------------------")
+        }else{
+            this.debug("no eggs in list, skipping round")
+            this.debug("-----------------------------------")
+        }
     }
 
 
@@ -995,14 +1152,14 @@ class Game extends Phaser.Scene {
         if(complete) {
             if(successful) {
                 this.collectEgg(egg_obj)
-                trial_data = [this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "collected"]
+                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "collected"]
 
             }else {
                 this.destroyEgg(egg_obj)
-                trial_data = [this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "destroyed"]
+                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "destroyed"]
             }
         }else {
-            trial_data = [this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "returned"]
+            trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "returned"]
         }
 
         if(rythm_obj != 0) {
@@ -1042,6 +1199,14 @@ class Game extends Phaser.Scene {
 
     update(time, delta) {
         // Used to update your game. This function runs constantly
+
+
+
+
+
+        console.log("time", time)
+        console.log("delta", delta)
+
 
         if(this.egg_manager.isDone()) {
 
