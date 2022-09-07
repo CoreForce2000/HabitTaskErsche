@@ -51,6 +51,7 @@ function general_config(speed) {
 var slide_text = {
 
     welcome: `Welcome. Please press F11 to enter fullscreen mode.
+Please ensure your sound is turned on.
     
 Press SPACE to continue`,
 
