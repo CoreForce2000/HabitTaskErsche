@@ -56,6 +56,11 @@ function general_config(speed) {
 }
 
 
+
+var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "event", "input_rythm_1","input_rythm_2","input_rythm_3", "actual_rythm_1","actual_rythm_2","actual_rythm_3", "error"]
+
+
+
 var slide_text = {
 
     welcome: `Welcome. Please press F11 to enter fullscreen mode.
@@ -1008,7 +1013,7 @@ class Training extends Phaser.Scene {
 
 
 
-var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "event", "input_rythm", "actual_rythm", "error"]
+
 var game_data = []
 
 class Game extends Phaser.Scene {
@@ -1137,7 +1142,7 @@ class Game extends Phaser.Scene {
                 disappear_timer.remove(false)
             })
 
-            game_data.push([participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "dropped"])
+            game_data.push([participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"dropped"])
 
     
             this.debug("-----------------------------------")
@@ -1183,18 +1188,18 @@ class Game extends Phaser.Scene {
             if(successful) {
                 this.collectEgg(egg_obj)
                 this.speed += 0.1
-                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "collected"]
+                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"collected"]
 
             }else {
                 this.destroyEgg(egg_obj)
                 this.speed -= 0.05
-                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "destroyed"]
+                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"destroyed"]
             }
         }else {
             if(!safeItemInArray(egg_obj.texture.key, this.distractor_list)) {
                 this.speed -= 0.05
             }
-            trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "returned"]
+            trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"returned"]
         }
 
         if(rythm_obj != 0) {
