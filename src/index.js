@@ -758,7 +758,7 @@ class Study extends Phaser.Scene {
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
             }else if(this.slide == 10) {
-                                        exportToCsv(game_data_columns, game_data)
+                                        //exportToCsv(game_data_columns, game_data)
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p1);
             }else if(this.slide == 11) {
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
