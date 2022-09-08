@@ -43,9 +43,9 @@ function general_config(speed) {
         //Higher Level Parameters
 
         wait_after_trial_complete: 200,
-        practise1_reps: 2,
+        practise1_reps: 5,
         practice2_reps: 2,
-        eggs_per_color: 5,
+        eggs_per_color: 30,
         
 
         //Misc
@@ -70,14 +70,14 @@ Press SPACE to continue`,
 
     introduction:`In this task, you are in the woods collecting diamonds,
 which are hidden away in eggs of different color and pattern.
-In order to retrieve the diamond, you need to use
-a certain tapping rythm on the egg. If the rythm is correct,
-the egg will open and the diamond will be added to your depot.
+In order to retrieve a diamond, you need to use
+a certain tapping rythm on an egg. If the rythm is correct,
+the egg will open and a diamond will be added to your depot.
 If the rythm is incorrect however, the egg will disappear and
 no diamond will be added to your depot.`,
 
     practice1:`First you will learn the different rythms that 
-may be used to open an egg and collect the diamond.
+may be used to open an egg and collect a diamond.
 In each round,a rythm is played, followed by a promt.
 You'll then need to replicate the rythm you just heard
 using your mouse to hover over the image of an R-Key, and the
@@ -181,6 +181,19 @@ once for every "tap" in that rythm`
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //
 //MISCELLANEOUS FUNCTIONS
@@ -231,48 +244,6 @@ function safeItemInArray(item, arr) {
         }
     }
     return false
-}
-
-function JSON2CSV(objArray) {
-    var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
-    var str = '';
-    var line = '';
-
-    if ($("#labels").is(':checked')) {
-        var head = array[0];
-        if ($("#quote").is(':checked')) {
-            for (var index in array[0]) {
-                var value = index + "";
-                line += '"' + value.replace(/"/g, '""') + '",';
-            }
-        } else {
-            for (var index in array[0]) {
-                line += index + ',';
-            }
-        }
-
-        line = line.slice(0, -1);
-        str += line + '\r\n';
-    }
-
-    for (var i = 0; i < array.length; i++) {
-        var line = '';
-
-        if ($("#quote").is(':checked')) {
-            for (var index in array[i]) {
-                var value = array[i][index] + "";
-                line += '"' + value.replace(/"/g, '""') + '",';
-            }
-        } else {
-            for (var index in array[i]) {
-                line += array[i][index] + ',';
-            }
-        }
-
-        line = line.slice(0, -1);
-        str += line + '\r\n';
-    }
-    return str;
 }
 
 
@@ -751,10 +722,12 @@ class Study extends Phaser.Scene {
 
     
     update(time, delta) {
+        
         if(this.prev_slide != this.slide) {
             this.prev_slide = this.slide
 
             console.log("slide", this.slide)
+
 
             if(this.slide == 0) {
                 this.main_text.setText('');
@@ -800,7 +773,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 14) {
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
             }else if(this.slide == 15) {
-                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practise2_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
+                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practice2_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
