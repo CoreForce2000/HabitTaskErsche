@@ -732,7 +732,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 2) {
                                         this.main_text.setText(slide_text.practice1);
             }else if(this.slide == 3) {
-                                        this.scene.launch('Training', { successive_correct_required: 1, rythm_list: [[2,1,1],[1,1,2],[1,2,1]]})
+                                        this.scene.launch('Training', { successive_correct_required: 5, rythm_list: [[2,1,1],[1,1,2],[1,2,1]]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
@@ -742,7 +742,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 5) {
                                         this.main_text.setText(slide_text.phase1_p2);
             }else if(this.slide == 6) {
-                                        this.scene.launch('Game', { phase_id: 1, num_egg_per_color: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["cyanEgg"]})
+                                        this.scene.launch('Game', { phase_id: 1, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
@@ -752,12 +752,13 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 8) {
                                         this.main_text.setText(slide_text.phase2_p2);
             }else if(this.slide == 9) {
-                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: 5, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
+                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
             }else if(this.slide == 10) {
+                                        exportToCsv(game_data_columns, game_data)
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p1);
             }else if(this.slide == 11) {
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
@@ -766,7 +767,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 13) {
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
             }else if(this.slide == 14) {
-                                        this.scene.launch('Training', { successive_correct_required: 1, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
+                                        this.scene.launch('Training', { successive_correct_required: 2, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
@@ -774,7 +775,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 15) {
                                         this.main_text.setText(slide_text.phase_3);
             }else if(this.slide == 16) {
-                                        this.scene.launch('Game', { phase_id: 3, num_egg_per_color: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
+                                        this.scene.launch('Game', { phase_id: 3, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
@@ -782,7 +783,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 17) {
                                         this.main_text.setText(slide_text.phase4);
             }else if(this.slide == 18) {
-                                        this.scene.launch('Game', { phase_id: 4, num_egg_per_color: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
+                                        this.scene.launch('Game', { phase_id: 4, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
@@ -1117,6 +1118,9 @@ class Game extends Phaser.Scene {
                 this_scene.removeEgg(egg_obj, true, successful, rythm_obj)
                 disappear_timer.remove(false)
             })
+
+            game_data.push([participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, "dropped"])
+
     
             this.debug("-----------------------------------")
         }else{
