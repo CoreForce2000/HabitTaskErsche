@@ -172,8 +172,8 @@ Press F11 to exit fullscreen`,
     // Other
 
     train_await_rythm: `Please replicate the rythm you have just heard
-in any speed you like, by hovering over the "R" key shown on screen
-and pressing a keyboard key or clicking the mouse button 
+in any speed you like, by hovering over the image of an R-key on screen
+and pressing the actualy R-key on your keyboard or clicking the mouse button 
 once for every "tap" in that rythm`
 }
 
