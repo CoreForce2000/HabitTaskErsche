@@ -2,49 +2,57 @@
 function general_config(speed) {
 
     return {
+        //Size and Scale
         width:1920,
         height:1080,
+
+        egg_size: 0.2,
+
+        //Grid where Eggs can Appear
 
         grid_x: 8,
         grid_y: 6,
         grid_margin: 1,
         grid_random: 0.2,
 
-        egg_size: 0.2,
+        //Speed
 
         max_speed: 4.0,
         min_speed: 0.8,
 
-        egg_drop_frequency: 3000 * (1/speed),
-        egg_exist_duration: 7000 * (1/speed),
-        egg_stay_after_collect_duration: 0 * (1/speed),
-
-        diamond_exist_duration: 1500 * (1/speed),
-
-        location_cooldown_duration: 2500 * (1/speed),
-
-
-        error_margin: 0.3,
-
-        //PRACTISE TRIAL
+        //Ingame: Training Parameters
 
         beat_duration: 300, //When playing the Beat in Practise
         delay_before_rythm_play: 0,
         delay_after_rythm_play: 1000,
         train_delay_between_beats:2000,
 
+        //Ingame: Phase Parameters
 
-        //ACTUAL TRIAL
+        egg_drop_frequency: 3000 * (1/speed),
+        egg_exist_duration: 7000 * (1/speed),
+        egg_stay_after_collect_duration: 0 * (1/speed),
+
+        diamond_exist_duration: 1500 * (1/speed),
+        location_cooldown_duration: 2500 * (1/speed),
+
+        //Rythm Error Margin
+
+        error_margin: 0.3,
+
+        //Higher Level Parameters
 
         wait_after_trial_complete: 200,
+        practise1_reps: 1,
+        practice2_reps: 1,
+        eggs_per_color: 5,
+        
 
+        //Misc
 
         collect_sound: "diamond",
-
-
         debug_mode: false
     }
-
 }
 
 
@@ -55,18 +63,28 @@ Please ensure your sound is turned on.
     
 Press SPACE to continue`,
 
-    practice1:`We will begin with a training phase.
-In each round, you will first hear a rythm. You will then be 
-promted to replicate that rythm by tapping any key on your keyboard, 
-or clicking in the correct rythm using your mouse.
-You will finally be informed about whether the rythm was correct or incorrect.
+    introduction:`In this task, you are in the woods collecting diamonds,
+which are hidden away in eggs of different color and pattern.
+In order to retrieve the diamond, you need to use
+a certain tapping rythm on the egg. If the rythm is correct,
+the egg will open and the diamond will be added to your depot.
+If the rythm is incorrect however, the egg will disappear and
+no diamond will be added to your depot.`,
+
+    practice1:`First you will learn the different rythms that 
+may be used to open an egg and collect the diamond.
+In each round,a rythm is played, followed by a promt.
+You'll then need to replicate the rythm you just heard
+using your mouse to hover over the image of an R-Key, and the
+actual R-key on your keyboard button to tap the rythm.
+Alternatively to the R-key, you can also use your mouse left click to 
+click the rythm.
 The practise round will end once you have mastered all the rythms
 
 When you are ready, press SPACE to begin training`,
 
-
-    phase1_p1:`Now that you have learned all the rythms, we can begin 
-the first phase of the study
+    phase1_p1:`Now that you have learned all the rythms, we can begin
+the egg hunt.
 
 Press SPACE to continue to the next slide`,
 
@@ -714,8 +732,6 @@ class Study extends Phaser.Scene {
         this.main_text.setOrigin(0.5)
         this.debug_text = this.add.text(general_config(1).width/2, general_config(1).height - (general_config(1).height/8), '', { fontSize: '35px', fill: '#C00', align: 'center', fontFamily: "calibri"});
         this.debug_text.setOrigin(0.5)
-
-
     }
 
     
@@ -730,65 +746,67 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 1) {
                                         this.main_text.setText(slide_text.welcome);
             }else if(this.slide == 2) {
-                                        this.main_text.setText(slide_text.practice1);
+                                        this.main_text.setText(slide_text.introduction);
             }else if(this.slide == 3) {
-                                        this.scene.launch('Training', { successive_correct_required: 5, rythm_list: [[2,1,1],[1,1,2],[1,2,1]]})
-                                        this.scene.pause()
-
-                                        this.main_text.setText('Loading Task...');
-                                        this.slide++
+                                        this.main_text.setText(slide_text.practice1);
             }else if(this.slide == 4) {
-                                        this.main_text.setText(slide_text.phase1_p1);
+                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practise1_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1]]})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
             }else if(this.slide == 5) {
-                                        this.main_text.setText(slide_text.phase1_p2);
+                                        this.main_text.setText(slide_text.phase1_p1);
             }else if(this.slide == 6) {
-                                        this.scene.launch('Game', { phase_id: 1, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["cyanEgg"]})
-                                        this.scene.pause()
-
-                                        this.main_text.setText('Loading Task...');
-                                        this.slide++
+                                        this.main_text.setText(slide_text.phase1_p2);
             }else if(this.slide == 7) {
-                                        this.main_text.setText(slide_text.phase2_p1);
-            }else if(this.slide == 8) {
-                                        this.main_text.setText(slide_text.phase2_p2);
-            }else if(this.slide == 9) {
-                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
+                                        this.scene.launch('Game', { phase_id: 1, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
+            }else if(this.slide == 8) {
+                                        this.main_text.setText(slide_text.phase2_p1);
+            }else if(this.slide == 9) {
+                                        this.main_text.setText(slide_text.phase2_p2);
             }else if(this.slide == 10) {
+                                        this.scene.launch('Game', { phase_id: 2, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
+            }else if(this.slide == 11) {
                                         //exportToCsv(game_data_columns, game_data)
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p1);
-            }else if(this.slide == 11) {
-                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
             }else if(this.slide == 12) {
-                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p3);
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
             }else if(this.slide == 13) {
-                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p3);
             }else if(this.slide == 14) {
-                                        this.scene.launch('Training', { successive_correct_required: 2, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
-                                        this.scene.pause()
-
-                                        this.main_text.setText('Loading Task...');
-                                        this.slide++
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
             }else if(this.slide == 15) {
-                                        this.main_text.setText(slide_text.phase_3);
-            }else if(this.slide == 16) {
-                                        this.scene.launch('Game', { phase_id: 3, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
+                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practise2_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
+            }else if(this.slide == 16) {
+                                        this.main_text.setText(slide_text.phase_3);
             }else if(this.slide == 17) {
-                                        this.main_text.setText(slide_text.phase4);
+                                        this.scene.launch('Game', { phase_id: 3, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
+                                        this.scene.pause()
+
+                                        this.main_text.setText('Loading Task...');
+                                        this.slide++
             }else if(this.slide == 18) {
-                                        this.scene.launch('Game', { phase_id: 4, num_egg_per_color: 25, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
+                                        this.main_text.setText(slide_text.phase4);
+            }else if(this.slide == 19) {
+                                        this.scene.launch('Game', { phase_id: 4, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++         
-            }else if(this.slide == 19) {
+            }else if(this.slide == 20) {
                                         this.main_text.setText(slide_text.finish);
                                         exportToCsv(game_data_columns, game_data)
             }
