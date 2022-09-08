@@ -789,7 +789,7 @@ class Study extends Phaser.Scene {
                                         this.slide++         
             }else if(this.slide == 19) {
                                         this.main_text.setText(slide_text.finish);
-                                        //exportToCsv(game_data_columns, game_data)
+                                        exportToCsv(game_data_columns, game_data)
             }
         }
     }
