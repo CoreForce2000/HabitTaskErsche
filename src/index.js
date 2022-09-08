@@ -43,9 +43,9 @@ function general_config(speed) {
         //Higher Level Parameters
 
         wait_after_trial_complete: 200,
-        practise1_reps: 0,
-        practice2_reps: 0,
-        eggs_per_color: 5,
+        practise1_reps: 5,
+        practice2_reps: 2,
+        eggs_per_color: 25,
         
 
         //Misc
