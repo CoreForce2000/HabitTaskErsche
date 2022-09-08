@@ -57,7 +57,7 @@ function general_config(speed) {
 
 
 
-var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "event", "input_rythm_1","input_rythm_2","input_rythm_3", "actual_rythm_1","actual_rythm_2","actual_rythm_3", "error"]
+var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "x","y","event", "input_rythm_1","input_rythm_2","input_rythm_3", "actual_rythm_1","actual_rythm_2","actual_rythm_3", "error"]
 
 
 
