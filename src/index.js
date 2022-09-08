@@ -43,9 +43,9 @@ function general_config(speed) {
         //Higher Level Parameters
 
         wait_after_trial_complete: 200,
-        practise1_reps: 5,
-        practice2_reps: 2,
-        eggs_per_color: 25,
+        practise1_reps: 0,
+        practice2_reps: 0,
+        eggs_per_color: 5,
         
 
         //Misc
@@ -300,6 +300,13 @@ function exportToCsv(columns, data) {
 }
 
 
+function unique(arr) {
+	return arr.filter((v, i, a) => a.indexOf(v) === i);
+}
+
+
+
+
 // LLLLLLLLLLL             IIIIIIIIII   SSSSSSSSSSSSSSS TTTTTTTTTTTTTTTTTTTTTTT
 // L:::::::::L             I::::::::I SS:::::::::::::::ST:::::::::::::::::::::T
 // L:::::::::L             I::::::::IS:::::SSSSSS::::::ST:::::::::::::::::::::T
@@ -342,6 +349,7 @@ export class ListManager {
         this.failed_list = []
 
         this.distractor_list = distractor_list
+
     }
 
     log(message) {
@@ -368,8 +376,10 @@ export class ListManager {
     }
 
     getRandom() {
+        var item = arrayRemoveRandom(unique(this.invisible_list))
+
         if(this.invisible_list.length > 0) {
-            var item = arrayRemoveRandom(this.invisible_list)
+            var item = arrayRemove(this.invisible_list, item)
             this.visible_list.push(item)
 
             return item
