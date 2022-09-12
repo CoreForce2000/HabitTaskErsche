@@ -47,8 +47,8 @@ function general_config(speed) {
         //Higher Level Parameters
 
         wait_after_trial_complete: 200,
-        practise1_reps: 0,
-        practice2_reps: 0,
+        practise1_reps: 1,
+        practice2_reps: 1,
         eggs_per_color: 5,
         
         //Misc
@@ -277,9 +277,18 @@ function exportToCsv(columns, data) {
 
 }
 
+function shuffle(arr) {
+	return arr.sort(() => Math.random() - 0.5)
+}
+
 
 function unique(arr) {
 	return arr.filter((v, i, a) => a.indexOf(v) === i);
+}
+
+function wait(scope, delay) {
+    scope.pause()
+    scope.time.addEvent({delay: delay,callback: scope.resume, callbackScope: this});
 }
 
 
@@ -755,7 +764,7 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 3) {
                                         this.main_text.setText(slide_text.practice1);
             }else if(this.slide == 4) {
-                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practise1_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1]]})
+                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practise1_reps, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
@@ -857,16 +866,10 @@ class Training extends Phaser.Scene {
     init(data) {
         this.debug_mode = false
 
-        this.prev_round = 0
-        this.round = 1
+        this.prev_slide = -1
+        this.slide = 0
 
-        this.rythm_list = []
-
-        for(var i=0; i<data.rythm_list.length; i++) {
-            for(var f=0; f<data.successive_correct_required; f++) {
-                this.rythm_list.push(data.rythm_list[i])
-            }
-        }
+        this.rythm_list = data.rythm_list
     }
     
     preload() {
@@ -908,6 +911,7 @@ class Training extends Phaser.Scene {
                 rythm[i] += rythm[i-1]
             }
 
+            
             this.time.addEvent({ delay: play_delay+rythm[i],
                 callback: function() {
                     this.sound.play(sound)
@@ -927,49 +931,62 @@ class Training extends Phaser.Scene {
     }
 
 
-    dropTheBeat() {
+
+    playAndRepeatRythm(egg, rythm) {
         this.debug("Dropping the Beat")
 
         this.training_text.setText("")
-        this.r_key.setOrigin(0.5)
+        egg.setOrigin(0.5)
 
-        var rythm = this.rythm_list_manager.getRandom()
-
-        this.playRythm(rythm, "tap", this.r_key, general_config(1).delay_before_rythm_play)
+        this.playRythm(rythm, "tap", egg, general_config(1).delay_before_rythm_play)
 
 
         //Wait until the beat has finished playing
         this.time.addEvent({
             delay: sumArray(rythm) * general_config(1).beat_duration + general_config(1).delay_before_rythm_play + general_config(1).delay_after_rythm_play,
             callback: function() {
-                this.r_key.setAlpha(0)
+                egg.setAlpha(0)
 
                 var this_this = this
 
                 this.rythm_manager.addRythmListener(this.screen_obj, rythm, "tap", true, function(successful) {
                     if(successful) {
                         this_this.training_text.setText("Correct")
-                        this_this.r_key.setAlpha(0)
+                        egg.setAlpha(0)
 
                         this_this.rythm_list_manager.remove(rythm, true, true)
 
                     }else{
                         this_this.training_text.setText("Incorrect")
-                        this_this.r_key.setAlpha(0)
+                        egg.setAlpha(0)
 
                         this_this.rythm_list_manager.remove(rythm)
                     }
                     this_this.round++
                 })
                 this.training_text.setText(slide_text.train_await_rythm)
-                this.r_key.setAlpha(0.5)
-                this.r_key.setOrigin(Math.floor(6*Math.random())-3, -1.0)
+                egg.setAlpha(0.5)
+                egg.setOrigin(Math.floor(6*Math.random())-3, -1.0)
 
             }, callbackScope: this});
-
     }
-    //destroying all my work mhhahahaha
+
     update(time, delta) {
+        
+        if(this.round == 1) {
+            for (const egg of shuffle(Object.keys(dict))) {
+                var rythm = this.rythm_list[rythm]
+                
+                this.playAndRepeatRythm(egg, rythm)
+                
+            }
+
+              
+
+        }
+
+
+
         if(this.rythm_list_manager.isDone()) {
             this.scene.resume('Study');
             this.scene.stop();
