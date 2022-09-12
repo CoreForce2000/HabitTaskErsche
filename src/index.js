@@ -968,7 +968,7 @@ class Training extends Phaser.Scene {
             }, callbackScope: this});
 
     }
-
+    //destroying all my work mhhahahaha
     update(time, delta) {
         if(this.rythm_list_manager.isDone()) {
             this.scene.resume('Study');
