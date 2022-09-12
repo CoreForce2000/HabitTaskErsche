@@ -980,9 +980,7 @@ class Training extends Phaser.Scene {
                 this.playAndRepeatRythm(egg, rythm)
                 
             }
-
-              
-
+            
         }
 
 
