@@ -20,6 +20,10 @@ function general_config(speed) {
         max_speed: 4.0,
         min_speed: 0.8,
 
+        speed_change_correct: 0.6,
+        speed_change_incorrect: -0.4,
+        speed_change_miss: -0.4,
+
         //Ingame: Training Parameters
 
         beat_duration: 300, //When playing the Beat in Practise
@@ -29,8 +33,8 @@ function general_config(speed) {
 
         //Ingame: Phase Parameters
 
-        egg_drop_frequency: 3000 * (1/speed),
-        egg_exist_duration: 7000 * (1/speed),
+        egg_drop_frequency: 2000 * (1/speed),
+        egg_exist_duration: 1500 * (1/speed),
         egg_stay_after_collect_duration: 0 * (1/speed),
 
         diamond_exist_duration: 1500 * (1/speed),
@@ -38,26 +42,29 @@ function general_config(speed) {
 
         //Rythm Error Margin
 
-        error_margin: 0.3,
+        error_margin: 0.25,
 
         //Higher Level Parameters
 
         wait_after_trial_complete: 200,
-        practise1_reps: 2,
-        practice2_reps: 1,
-        eggs_per_color: 6,
+        practise1_reps: 0,
+        practice2_reps: 0,
+        eggs_per_color: 5,
         
-
         //Misc
 
         collect_sound: "diamond",
-        debug_mode: false
+        debug_mode: false,
+        randomness: "absolute", //relative,  //Description: With absolute randomness each color is always picked with the same probability, with relative its depending on the number of eggs of that color in the list, so the less eggs the less likely it will be selected
+    
+        egg_locations_random: false
+    
     }
 }
 
 
 
-var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "x","y","event", "input_rythm_1","input_rythm_2","input_rythm_3", "actual_rythm_1","actual_rythm_2","actual_rythm_3", "error"]
+var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "x","y","event", "input_rythm_1","input_rythm_2","input_rythm_3", "error"]
 
 
 
@@ -347,13 +354,23 @@ export class ListManager {
     }
 
     getRandom() {
-        var item = arrayRemoveRandom(unique(this.invisible_list))
+        if(general_config(1).randomness == "absolute") {
+            var item = arrayRemoveRandom(unique(this.invisible_list))
 
-        if(this.invisible_list.length > 0) {
-            var item = arrayRemove(this.invisible_list, item)
+            if(this.invisible_list.length > 0) {
+                var item = arrayRemove(this.invisible_list, item)
+                this.visible_list.push(item)
+
+                return item
+            }
+        }
+        else if(general_config(1).randomness == "relative") {
+            var item = arrayRemoveRandom(this.invisible_list)
             this.visible_list.push(item)
 
             return item
+        }else{
+            this.log("ERROR: No valid randomness selected")
         }
     }
 
@@ -929,7 +946,7 @@ class Training extends Phaser.Scene {
 
                 var this_this = this
 
-                this.rythm_manager.addRythmListener(this.r_key, rythm, "tap", false, function(successful) {
+                this.rythm_manager.addRythmListener(this.screen_obj, rythm, "tap", true, function(successful) {
                     if(successful) {
                         this_this.training_text.setText("Correct")
                         this_this.r_key.setAlpha(0)
@@ -1028,9 +1045,9 @@ class Game extends Phaser.Scene {
         this.distractor_list = data.distractor_list
         
         this.eggs_in_game = [...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "blueEgg"}),
-                            ...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "redEgg"}),
-                            ...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "yellowEgg"}),
-                            ...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "cyanEgg"})]
+                             ...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "redEgg"}),
+                             ...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "yellowEgg"}),
+                             ...Array.apply(null, Array(data.num_egg_per_color)).map(function(){return "cyanEgg"})]
 
     }
     
@@ -1087,7 +1104,16 @@ class Game extends Phaser.Scene {
         }
 
         this.egg_manager = new ListManager(this.eggs_in_game, this.distractor_list)
-        this.location_manager = new ListManager(this.generateEggLocations())
+
+        if(general_config(1).egg_locations_random) {
+            this.location_manager = new ListManager(this.generateEggLocations())
+        }else{
+            this.location_manager = new ListManager({x: general_config(1).width/8, y: general_config(1).height/4},
+                                                    {x: general_config(1).width/4, y: general_config(1).height/2},
+                                                    {x: general_config(1).width - general_config(1).width/4, y: general_config(1).height/2},
+                                                    {x: general_config(1).width - general_config(1).width/8, y: general_config(1).height/4})
+        }
+
         this.rythm_manager = new RythmManager(this)
 
         this.start_time = Date.now()
@@ -1170,24 +1196,24 @@ class Game extends Phaser.Scene {
         if(complete) {
             if(successful) {
                 this.collectEgg(egg_obj)
-                this.speed += 0.1
+                this.speed += general_config(1).speed_change_correct
                 trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"collected"]
 
             }else {
                 this.destroyEgg(egg_obj)
-                this.speed -= 0.05
+                this.speed += general_config(1).speed_change_incorrect
                 trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"destroyed"]
             }
         }else {
             if(!safeItemInArray(egg_obj.texture.key, this.distractor_list)) {
-                this.speed -= 0.05
+                this.speed += general_config(1).speed_change_miss
             }
             trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"returned"]
         }
 
         if(rythm_obj != 0) {
             this.log("Pushing Trial data")
-            trial_data = [...trial_data, rythm_obj.input_rythm, rythm_obj.rythm, rythm_obj.error]
+            trial_data = [...trial_data, rythm_obj.input_rythm, rythm_obj.error]
         }
         game_data.push(trial_data)
 
