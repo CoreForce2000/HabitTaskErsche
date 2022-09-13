@@ -286,10 +286,6 @@ function unique(arr) {
 	return arr.filter((v, i, a) => a.indexOf(v) === i);
 }
 
-function wait(scope, delay) {
-    scope.pause()
-    scope.time.addEvent({delay: delay,callback: scope.resume, callbackScope: this});
-}
 
 
 
@@ -866,8 +862,11 @@ class Training extends Phaser.Scene {
     init(data) {
         this.debug_mode = false
 
-        this.prev_slide = -1
-        this.slide = 0
+        this.prev_subround = -1
+        this.subround = 0
+
+        this.prev_round = -1
+        this.round = 0
 
         this.rythm_list = data.rythm_list
     }
@@ -962,7 +961,8 @@ class Training extends Phaser.Scene {
 
                         this_this.rythm_list_manager.remove(rythm)
                     }
-                    this_this.round++
+                    console.log("wake")
+                    this.game.loop.wake()
                 })
                 this.training_text.setText(slide_text.train_await_rythm)
                 egg.setAlpha(0.5)
@@ -971,31 +971,18 @@ class Training extends Phaser.Scene {
             }, callbackScope: this});
     }
 
+
+
     update(time, delta) {
         
         if(this.round == 1) {
             for (const egg of shuffle(Object.keys(dict))) {
                 var rythm = this.rythm_list[rythm]
-                
+                    
                 this.playAndRepeatRythm(egg, rythm)
+                console.log("sleep")
+                this.game.loop.sleep()
                 
-            }
-            
-        }
-
-
-
-        if(this.rythm_list_manager.isDone()) {
-            this.scene.resume('Study');
-            this.scene.stop();
-        }else{
-            if(this.prev_round != this.round) {
-                this.prev_round = this.round
-    
-                this.time.addEvent({ delay: general_config(1).train_delay_between_beats,
-                    callback: function() {
-                        this.dropTheBeat()
-                }, callbackScope: this});
             }
         }
     }
@@ -1293,6 +1280,122 @@ class Game extends Phaser.Scene {
     
 
 
+//TTTTTTTTTTTTTTTTTTTTTTTEEEEEEEEEEEEEEEEEEEEEE   SSSSSSSSSSSSSSS TTTTTTTTTTTTTTTTTTTTTTT
+//T:::::::::::::::::::::TE::::::::::::::::::::E SS:::::::::::::::ST:::::::::::::::::::::T
+//T:::::::::::::::::::::TE::::::::::::::::::::ES:::::SSSSSS::::::ST:::::::::::::::::::::T
+//T:::::TT:::::::TT:::::TEE::::::EEEEEEEEE::::ES:::::S     SSSSSSST:::::TT:::::::TT:::::T
+//TTTTTT  T:::::T  TTTTTT  E:::::E       EEEEEES:::::S            TTTTTT  T:::::T  TTTTTT
+//        T:::::T          E:::::E             S:::::S                    T:::::T        
+//        T:::::T          E::::::EEEEEEEEEE    S::::SSSS                 T:::::T        
+//        T:::::T          E:::::::::::::::E     SS::::::SSSSS            T:::::T        
+//        T:::::T          E:::::::::::::::E       SSS::::::::SS          T:::::T        
+//        T:::::T          E::::::EEEEEEEEEE          SSSSSS::::S         T:::::T        
+//        T:::::T          E:::::E                         S:::::S        T:::::T        
+//        T:::::T          E:::::E       EEEEEE            S:::::S        T:::::T        
+//      TT:::::::TT      EE::::::EEEEEEEE:::::ESSSSSSS     S:::::S      TT:::::::TT      
+//      T:::::::::T      E::::::::::::::::::::ES::::::SSSSSS:::::S      T:::::::::T      
+//      T:::::::::T      E::::::::::::::::::::ES:::::::::::::::SS       T:::::::::T      
+//      TTTTTTTTTTT      EEEEEEEEEEEEEEEEEEEEEE SSSSSSSSSSSSSSS         TTTTTTTTTTT      
+                                                                                              
+
+class Sequence {
+    constructor() {
+        this.pending_sequence = []
+        this.sequence = []
+
+        this.prev_step = 0
+        this.step = 1
+    }
+
+    play() {
+        if(this.step != this.prev_step) {
+            this.step = this.prev_step
+
+            func = this.sequence[this.step][0]
+            args = this.sequence[this.step][1]
+            
+            func(...args)
+
+            this.step++
+        }
+    }
+
+    queue(func, args) {
+        this.pending_sequence.push([func, args])
+    }
+
+    pushQueue() {
+        this.sequence = [...this.sequence, this.pending_sequence]
+    }
+
+    pushQueueFirst() {
+        this.sequence = [this.pending_sequence, ...this.sequence ]
+    }
+
+    wait(delay) {
+        this.queue(function (delay) {
+            this.step--
+            this.time.addEvent({delay: delay, callback: function() {
+                this.step++
+            }, callbackScope: this});
+        }, delay)
+    }
+
+    waitButton(button) {
+        this.sequence.push(function (button) {
+            this.step--
+            this.input.keyboard.on(button, function (event) {
+                this.step++
+            });
+        }, button)
+    }
+}
+
+
+
+
+class Test extends Phaser.Scene {
+    constructor() {
+        super('Test')
+    }
+    
+    preload() {
+        this.load.image('cyanEgg', 'assets/cyanEgg.png');
+        this.load.image('blueEgg', 'assets/blueEgg.png');
+        this.load.image('redEgg', 'assets/redEgg.png');
+        this.load.image('yellowEgg', 'assets/yellowEgg.png');
+        this.load.image('white', 'assets/background_title.jpg');
+        this.load.audio('tap', ['assets/chisel.mp3'])
+        this.load.audio('diamond', ['assets/diamond.mp3'])
+    }
+
+
+
+
+
+    create(data) {
+
+        const pipe = (...fns) => fns.reduce(_reduced);
+
+        this.seq = new Sequence()
+
+        this.seq.queue(this.add.image, [200,200, "cyanEgg"])
+        this.seq.wait(500)
+        this.seq.queue(this.add.image, [200,200, "blueEgg"])
+        this.seq.wait(500)
+        this.seq.queue(this.add.image, [200,200, "redEgg"])
+        this.seq.wait(500)
+        this.seq.queue(this.add.image, [200,200, "yellowEgg"])
+
+        this.seq.pushQueue()
+
+    }
+
+
+    update(time, delta) {
+        this.seq.play()
+    }
+}
 
 
 
@@ -1305,7 +1408,7 @@ class Game extends Phaser.Scene {
 const config = {
     type: Phaser.AUTO,
     backgroundColor: "#FFF",
-    scene: [Study, Training, Game],
+    scene: [Test],//[Study, Training, Game],
 
     scale: {
         parent: 'viewport',
