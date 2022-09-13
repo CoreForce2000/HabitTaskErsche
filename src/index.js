@@ -1,4 +1,5 @@
 
+
 function general_config(speed) {
 
     return {
@@ -54,6 +55,7 @@ function general_config(speed) {
         //Misc
 
         collect_sound: "diamond",
+        tap_sound: "tap",
         debug_mode: false,
         randomness: "absolute", //relative,  //Description: With absolute randomness each color is always picked with the same probability, with relative its depending on the number of eggs of that color in the list, so the less eggs the less likely it will be selected
     
@@ -280,7 +282,6 @@ function exportToCsv(columns, data) {
 function shuffle(arr) {
 	return arr.sort(() => Math.random() - 0.5)
 }
-
 
 function unique(arr) {
 	return arr.filter((v, i, a) => a.indexOf(v) === i);
@@ -520,10 +521,12 @@ export class RythmManager {
         var this_this = this
 
         rythm_object.image.on('pointerover',function() {
+            this_this.log("Hovering")
             this_this.hoverOver(rythm_object)
         })
 
         rythm_object.image.on('pointerout',function() {
+            this_this.log("Hovering no more")
             this_this.hoverOver(0)
         })
 
@@ -533,12 +536,39 @@ export class RythmManager {
     }
 
 
+    rythmImage(x, y, image, rythm, func, sound="tap", pre_activate=false) {
+
+        this.scope.add.image(x,y,image)
+
+        var rythm_object = new RythmObject(image, rythm, sound, func)
+
+        var this_this = this
+
+        rythm_object.image.on('pointerover',function() {
+            this.log("Hovering")
+            this_this.hoverOver(rythm_object)
+        })
+
+        rythm_object.image.on('pointerout',function() {
+            this.log("Hovering no more")
+            this_this.hoverOver(0)
+        })
+
+        if(pre_activate) {
+            this_this.hoverOver(rythm_object)
+        }
+        console.log(rythm_object.texture.key)
+
+        return rythm_object.image
+    }
+
+
     click() 
     {
         this.curr_time = Date.now()
 
 
-        this.debug(`tap Registered on ${this.currently_hovering}`)
+        this.log(`tap Registered on ${this.currently_hovering}`)
 
         if(this.currently_hovering != 0) {
             this.scope.sound.play(this.currently_hovering.sound)
@@ -843,6 +873,81 @@ class Study extends Phaser.Scene {
 
 
 
+class Sequence {
+    constructor() {
+        this.pending_sequence = []
+        this.sequence = []
+
+        this.prev_step = -1
+        this.step = 0
+
+        this.initialized_buttons = {}
+    }
+
+    play() {
+        if(this.sequence.length > this.step) {
+            if(this.step != this.prev_step) {
+                this.prev_step = this.step
+
+                this.sequence[this.step]()
+                console.log("Step", this.step)
+                this.step++
+            }
+        }
+
+    }
+
+    q(func) {
+        this.pending_sequence.push(func)
+    }
+
+    pushQueue() {
+        this.sequence = [...this.sequence, ...this.pending_sequence]
+    }
+
+    pushQueueFirst() {
+        this.sequence = [...this.pending_sequence, ...this.sequence]
+    }
+
+    wait(scene, delay) {
+        
+        this.q(() => {
+            this.step--
+            scene.time.addEvent({delay: delay, callback: function() {
+                this.step++
+            }, callbackScope: this});
+        })
+    }
+
+    waitInput(scene, buttons) {
+        this.q(() => {
+            this.step--
+            for(const button of buttons) {
+                if(safeItemInArray(button, Object.keys(this.initialized_buttons))) {
+                    this.initialized_buttons[button] += 1
+                    return
+                }
+                this.initialized_buttons[button] = 1
+
+                var onInput = () => {
+                    if(this.initialized_buttons[button] > 0) {
+                        this.initialized_buttons[button] -= 1
+                        this.step++
+                    }
+                }
+
+                if(button == "pointerdown") {
+                    scene.input.on(button, onInput);
+                }else{
+                    scene.input.keyboard.on(button, onInput);
+                }                
+            }
+        })
+    }
+}
+
+
+
 
 class Training extends Phaser.Scene {
     constructor() {
@@ -861,38 +966,91 @@ class Training extends Phaser.Scene {
     
     init(data) {
         this.debug_mode = false
-
-        this.prev_subround = -1
-        this.subround = 0
-
-        this.prev_round = -1
-        this.round = 0
-
         this.rythm_list = data.rythm_list
     }
     
     preload() {
+        this.load.image('cyanEgg', 'assets/cyanEgg.png');
+        this.load.image('blueEgg', 'assets/blueEgg.png');
+        this.load.image('redEgg', 'assets/redEgg.png');
+        this.load.image('yellowEgg', 'assets/yellowEgg.png');
+
         this.load.image('whitescreen', 'assets/background_title.jpg');
         this.load.image('r_key', 'assets/r_key.png');
         this.load.audio('tap', ['assets/chisel.mp3'])
     }
 
 
+
+    q_playRythm(rythm) {
+        for(var beat of rythm) {
+            this.s.wait(this, beat)
+            this.s.q(() => {
+                this.sound.play(general_config(1).tap_sound)
+                this.sound.context.resume();
+                this.image.setAlpha(1)
+                this.time.addEvent({ delay: 100, callback: () => {this.image.setAlpha(0.5)}, callbackScope: this})
+            })
+        }
+    }
+
+    q_setup() {
+        this.s.q(() => {
+            this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
+            this.sound.context.resume()})
+    }
+
+    q_listenRythm(rythm) {
+        this.s.q(() => {
+            this.s.step--
+            this.rm.addRythmListener(this.image, rythm, "tap", false, () => {this.s.step++})})
+    }
+
+
     create(data) {
+        this.s = new Sequence()
+        this.rm = new RythmManager(this)
 
-        this.score = 0
+        this.s.waitInput(this,["keydown-SPACE", "pointerdown"])
 
-        this.rythm_list_manager = new ListManager(this.rythm_list)
-        this.rythm_manager = new RythmManager(this)
+        this.s.q(() => {        
+            let element = document.getElementById('input-box')
+            element.style.display = "none"})
 
-        this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
+        this.q_setup()
+        
+        this.s.wait(this,2000)
 
-        this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
-        this.training_text.setOrigin(0.5);
+        for(var egg in shuffle(["redEgg", "yellowEgg", "blueEgg", "cyanEgg"])) {
+            this.s.q(() => {
+                this.image = this.add.image(general_config(1).width/2,general_config(1).height/2, "redEgg")
+                this.image.setAlpha(0.5)
+                this.image.setInteractive({ useHandCursor: true })
+            })
 
-        this.r_key = this.add.image(general_config(1).width/2,general_config(1).height/2, "r_key")
-        this.r_key.setAlpha(0.5)
-        this.r_key.setInteractive({ useHandCursor: true })
+            this.q_playRythm([0,300,600,300]) 
+
+            this.q_listenRythm([1,2,1])
+
+            this.s.wait(this, 1000)
+        }
+        
+        this.s.pushQueue()
+
+        
+
+        
+        //this.score = 0
+
+        //this.rythm_list_manager = new ListManager(this.rythm_list)
+        //this.rythm_manager = new RythmManager(this)
+
+        //this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
+        //this.training_text.setOrigin(0.5);
+
+        //this.r_key = this.add.image(general_config(1).width/2,general_config(1).height/2, "r_key")
+        //this.r_key.setAlpha(0.5)
+        //this.r_key.setInteractive({ useHandCursor: true })
 
 
     }
@@ -930,61 +1088,8 @@ class Training extends Phaser.Scene {
     }
 
 
-
-    playAndRepeatRythm(egg, rythm) {
-        this.debug("Dropping the Beat")
-
-        this.training_text.setText("")
-        egg.setOrigin(0.5)
-
-        this.playRythm(rythm, "tap", egg, general_config(1).delay_before_rythm_play)
-
-
-        //Wait until the beat has finished playing
-        this.time.addEvent({
-            delay: sumArray(rythm) * general_config(1).beat_duration + general_config(1).delay_before_rythm_play + general_config(1).delay_after_rythm_play,
-            callback: function() {
-                egg.setAlpha(0)
-
-                var this_this = this
-
-                this.rythm_manager.addRythmListener(this.screen_obj, rythm, "tap", true, function(successful) {
-                    if(successful) {
-                        this_this.training_text.setText("Correct")
-                        egg.setAlpha(0)
-
-                        this_this.rythm_list_manager.remove(rythm, true, true)
-
-                    }else{
-                        this_this.training_text.setText("Incorrect")
-                        egg.setAlpha(0)
-
-                        this_this.rythm_list_manager.remove(rythm)
-                    }
-                    console.log("wake")
-                    this.game.loop.wake()
-                })
-                this.training_text.setText(slide_text.train_await_rythm)
-                egg.setAlpha(0.5)
-                egg.setOrigin(Math.floor(6*Math.random())-3, -1.0)
-
-            }, callbackScope: this});
-    }
-
-
-
     update(time, delta) {
-        
-        if(this.round == 1) {
-            for (const egg of shuffle(Object.keys(dict))) {
-                var rythm = this.rythm_list[rythm]
-                    
-                this.playAndRepeatRythm(egg, rythm)
-                console.log("sleep")
-                this.game.loop.sleep()
-                
-            }
-        }
+        this.s.play()
     }
 }
 
@@ -1298,58 +1403,6 @@ class Game extends Phaser.Scene {
 //      TTTTTTTTTTT      EEEEEEEEEEEEEEEEEEEEEE SSSSSSSSSSSSSSS         TTTTTTTTTTT      
                                                                                               
 
-class Sequence {
-    constructor() {
-        this.pending_sequence = []
-        this.sequence = []
-
-        this.prev_step = 0
-        this.step = 1
-    }
-
-    play() {
-        if(this.step != this.prev_step) {
-            this.step = this.prev_step
-
-            func = this.sequence[this.step][0]
-            args = this.sequence[this.step][1]
-            
-            func(...args)
-
-            this.step++
-        }
-    }
-
-    queue(func, args) {
-        this.pending_sequence.push([func, args])
-    }
-
-    pushQueue() {
-        this.sequence = [...this.sequence, this.pending_sequence]
-    }
-
-    pushQueueFirst() {
-        this.sequence = [this.pending_sequence, ...this.sequence ]
-    }
-
-    wait(delay) {
-        this.queue(function (delay) {
-            this.step--
-            this.time.addEvent({delay: delay, callback: function() {
-                this.step++
-            }, callbackScope: this});
-        }, delay)
-    }
-
-    waitButton(button) {
-        this.sequence.push(function (button) {
-            this.step--
-            this.input.keyboard.on(button, function (event) {
-                this.step++
-            });
-        }, button)
-    }
-}
 
 
 
@@ -1370,22 +1423,19 @@ class Test extends Phaser.Scene {
     }
 
 
-
-
-
     create(data) {
-
-        const pipe = (...fns) => fns.reduce(_reduced);
 
         this.seq = new Sequence()
 
-        this.seq.queue(this.add.image, [200,200, "cyanEgg"])
-        this.seq.wait(500)
-        this.seq.queue(this.add.image, [200,200, "blueEgg"])
-        this.seq.wait(500)
-        this.seq.queue(this.add.image, [200,200, "redEgg"])
-        this.seq.wait(500)
-        this.seq.queue(this.add.image, [200,200, "yellowEgg"])
+
+
+        this.seq.queue(() => {this.add.image(200,200, "cyanEgg")})
+        this.seq.wait(this,500)
+        this.seq.queue(() => {this.add.image(200,200, "blueEgg")})
+        this.seq.wait(this,500)
+        this.seq.queue(() => {this.add.image(200,200, "redEgg")})
+        this.seq.waitButton(this, "keydown-SPACE")
+        this.seq.queue(() => {this.add.image(200,200, "yellowEgg")})
 
         this.seq.pushQueue()
 
@@ -1408,7 +1458,7 @@ class Test extends Phaser.Scene {
 const config = {
     type: Phaser.AUTO,
     backgroundColor: "#FFF",
-    scene: [Test],//[Study, Training, Game],
+    scene: [Training],//[Study, Training, Game],
 
     scale: {
         parent: 'viewport',
