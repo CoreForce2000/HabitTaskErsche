@@ -1,4 +1,5 @@
-
+var width=1920
+var height=1080
 
 function general_config(speed) {
 
@@ -286,6 +287,53 @@ function shuffle(arr) {
 function unique(arr) {
 	return arr.filter((v, i, a) => a.indexOf(v) === i);
 }
+
+function rythmsMatch(input_rythm, rythm) {
+
+    //How do we compare the inserted rythm with the desired one?
+    //Rythm is defined in config in beats, which is the smallest unit
+    //Typically, 1 is short and 2 beats are long
+
+    //We first summarize the number of beats in a rythm (should be the same for all rythms)
+    var total_duration = sumArray(input_rythm)
+    var total_beats_actual_rythm = sumArray(rythm)
+
+    //then we divide the total duration by number of beats to get the length of all beats
+    var beat_duration = total_duration / total_beats_actual_rythm
+    
+
+    var relative_error_list = []
+    
+    for(let i=0; i<rythm.length; i++) {
+        
+        var input_break = input_rythm[i]
+
+        //Finally, we check for each entry if the number of beats times beat length (necessary length) Matches the one inserted
+        var actual_break = rythm[i] * beat_duration
+        
+        var error = Math.abs(input_break - actual_break)
+        
+        var relative_error = error / actual_break
+
+        relative_error_list.push(relative_error)
+
+        //Here we find the percentage divergence of the clicked with the ideal, and see if its below the threshold
+        //If no, we break (fail), if yes, we continue until the end (success)
+        //We are using percentage error, margin defined in config
+        if(relative_error > general_config(1).error_margin) {
+            return false
+        }
+    }
+
+    var avg_relative_error = (sumArray(relative_error_list) / relative_error_list.length)
+
+    console.log(avg_relative_error)
+
+    rythm_obj.error = avg_relative_error
+    
+    return true
+
+    }
 
 
 
@@ -880,8 +928,6 @@ class Sequence {
 
         this.prev_step = -1
         this.step = 0
-
-        this.initialized_buttons = {}
     }
 
     play() {
@@ -909,6 +955,14 @@ class Sequence {
         this.sequence = [...this.pending_sequence, ...this.sequence]
     }
 
+    startTimer() {
+        this.q(()=> {this.timer = Date.now()})
+    }
+
+    endTimer(func) {
+        this.q(()=> { func( Date.now()-this.timer )})
+    }
+
     wait(scene, delay) {
         
         this.q(() => {
@@ -919,28 +973,46 @@ class Sequence {
         })
     }
 
-    waitInput(scene, buttons) {
+    waitInput(scene, pointer=false, key="SPACE") {
         this.q(() => {
             this.step--
-            for(const button of buttons) {
-                if(safeItemInArray(button, Object.keys(this.initialized_buttons))) {
-                    this.initialized_buttons[button] += 1
-                    return
+            var key_listener = 0
+            var click_listener = 0
+        
+            var whenInput = () => {
+                console.log("Key/Click down!")
+                this.step++
+                if(key_listener != 0) {
+                    scene.input.keyboard.removeKey(key);
+                    key_listener.removeListener("down")
                 }
-                this.initialized_buttons[button] = 1
-
-                var onInput = () => {
-                    if(this.initialized_buttons[button] > 0) {
-                        this.initialized_buttons[button] -= 1
-                        this.step++
-                    }
+                if(click_listener != 0) {
+                    click_listener.removeListener("pointerdown")
                 }
+                
+            }
+        
+            if(key != "") {
+                key_listener = scene.input.keyboard.addKey(key).on('down', whenInput);
+            }
+            if(pointer) {
+                click_listener = scene.input.on("pointerdown", whenInput)
+            }              
+        })
+    }
 
-                if(button == "pointerdown") {
-                    scene.input.on(button, onInput);
-                }else{
-                    scene.input.keyboard.on(button, onInput);
-                }                
+    waitRythm(scene, rythm, pointer=false, key="SPACE") {
+        for(const beat of rythm) {
+            this.q(()=> {this.global_beat = []})
+            this.startTimer()
+            this.waitInput(scene,pointer,key)
+            this.endTimer((duration)=> {this.global_beat.push(duration)})
+        }
+        this.q(()=> {
+            if(rythmsMatch(this.global_beat, rythm)) {
+                scene.left=true
+            }else{
+                scene.left=false
             }
         })
     }
@@ -994,45 +1066,103 @@ class Training extends Phaser.Scene {
         }
     }
 
-    q_setup() {
+    q_setupStuff() {
         this.s.q(() => {
             this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
+            this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
+            this.training_text.setOrigin(0.5);
             this.sound.context.resume()})
     }
 
-    q_listenRythm(rythm) {
+    q_waitForRythm(rythm, func) {
         this.s.q(() => {
             this.s.step--
-            this.rm.addRythmListener(this.image, rythm, "tap", false, () => {this.s.step++})})
+            this.rm.addRythmListener(this.image, rythm, "tap", true, func)})
     }
+
+    q_hideInputBox() {
+        this.s.q(() => { //Hide Display after first        
+            let element = document.getElementById('input-box')
+            element.style.display = "none"
+        })
+    }
+
+    q_generateEggImageAndLoadInThis() {
+        this.s.q(() => {
+            this.image = this.add.image(general_config(1).width/2,general_config(1).height/2, "redEgg")
+            this.image.setAlpha(0.5)
+            this.image.setInteractive({ useHandCursor: true })
+        })
+    }
+
+    q_setText(text) {
+        this.s.q(() => {
+            this.training_text.setText(text)
+        })
+    }
+
+    q_doIfTrueElse(bool, funcTrue, funcFalse) {
+        this.s.q(() => {
+            if(bool) {
+                funcTrue()
+            }else{
+                funcFalse()
+            }
+        })
+    }
+
+
+    addImage(x,y,image, hover=true, scale=1, alpha=1 ) {
+        var image = this.add.image(general_config(1).width/2,general_config(1).height/2, "redEgg")
+        image.setInteractive({ useHandCursor: true })
+        image.setAlpha(alpha)
+        image.setScale(scale)
+
+        image.on('pointerover',function() {
+            this.currently_hovering = image
+        })
+        image.on('pointerout',function() {
+            this.currently_hovering = 0
+        })
+
+        return image
+    }
+
 
 
     create(data) {
         this.s = new Sequence()
         this.rm = new RythmManager(this)
+        this.egg_list = ["redEgg", "yellowEgg", "blueEgg", "cyanEgg"]
 
-        this.s.waitInput(this,["keydown-SPACE", "pointerdown"])
-
-        this.s.q(() => {        
-            let element = document.getElementById('input-box')
-            element.style.display = "none"})
-
-        this.q_setup()
+        this.left=true
         
+
+        this.trial_results = []
+
+        this.s.waitInput(this,true,"SPACE")
+        this.q_hideInputBox()
+        this.q_setupStuff()
         this.s.wait(this,2000)
 
-        for(var egg in shuffle(["redEgg", "yellowEgg", "blueEgg", "cyanEgg"])) {
+        for(var i=0; i<this.egg_list.length; i++) {
             this.s.q(() => {
-                this.image = this.add.image(general_config(1).width/2,general_config(1).height/2, "redEgg")
-                this.image.setAlpha(0.5)
-                this.image.setInteractive({ useHandCursor: true })
-            })
+                this.em = new ListManager(this.egg_list)
+                this.image = this.addImage(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)})
 
             this.q_playRythm([0,300,600,300]) 
-
-            this.q_listenRythm([1,2,1])
-
             this.s.wait(this, 1000)
+            this.q_setText("Please repeat the rythm as you have heard it")
+            this.s.waitRythm(this, [0,1,2,1])
+            this.s.q(() => {
+                if(this.left) {
+                    this.q_setText("Correct")
+                }else{
+                    this.q_setText("Incorrect")
+                }})
+            this.s.wait(this,2000)
+            this.q_setText("")
+            
         }
         
         this.s.pushQueue()
@@ -1425,25 +1555,42 @@ class Test extends Phaser.Scene {
 
     create(data) {
 
-        this.seq = new Sequence()
+        //
+        //scene.input.keyboard.on(button, onInput);
 
+        //var space_listener = this.input.keyboard.on("keydown-SPACE", ()=>{
+        //    console.log("Space pressed!")
+        //    //this.input.keyboard.removeKey('SPACE');
+        //    space_listener.destroy();
+        //});
 
+        var pointer = true
+        var key = "SPACE"
 
-        this.seq.queue(() => {this.add.image(200,200, "cyanEgg")})
-        this.seq.wait(this,500)
-        this.seq.queue(() => {this.add.image(200,200, "blueEgg")})
-        this.seq.wait(this,500)
-        this.seq.queue(() => {this.add.image(200,200, "redEgg")})
-        this.seq.waitButton(this, "keydown-SPACE")
-        this.seq.queue(() => {this.add.image(200,200, "yellowEgg")})
+        var key_listener = 0
+        var click_listener = 0
 
-        this.seq.pushQueue()
+        var whenInput = () => {
+            console.log("Key/Click down!")
+            if(key_listener != 0) {
+                this.input.keyboard.removeKey(key);
+                key_listener.removeListener("down")
+            }
+            if(click_listener != 0) {
+                click_listener.removeListener("pointerdown")
+            }
+        }
 
+        if(key != "") {
+            key_listener = this.input.keyboard.addKey(key).on('down', whenInput);
+        }
+        if(pointer) {
+            click_listener = this.input.on("pointerdown", whenInput)
+        }
     }
 
 
     update(time, delta) {
-        this.seq.play()
     }
 }
 
