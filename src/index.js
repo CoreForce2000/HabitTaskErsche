@@ -293,6 +293,8 @@ function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
     var ir_total_duration = sumArray(ir)
     var ar_total_beats = sumArray(ar)
 
+    console.log(ir,ar)
+
     var ir_mean_beat_duration = ir_total_duration / ar_total_beats
     
     var rel_e_list = []
@@ -302,8 +304,6 @@ function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
 
         var rel_e = Math.abs(ir_beat_duration - ar_beat_duration) / ar_beat_duration //Relative Error
 
-        console.log("Relative error:", rel_e)
-
         if(rel_e > general_config(1).error_margin) { //Relative Error
             return false
         }else {
@@ -311,8 +311,7 @@ function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
         }
     }
     //var avg_rel_e = (sumArray(rel_e_list) / rel_e_list.length)
-    var max_rel_e = (sumArray(rel_e_list) / rel_e_list.length)
-    console.log("Max. Relative error:", max_rel_e)
+    console.log("Max. Relative error:", Math.max(rel_e_list))
 
     return true
 }
@@ -357,12 +356,12 @@ export class ListManager {
         
         this.prefix = "[ListManager]:"
 
-        this.invisible_list = invisible_list
+        this.invisible_list = [...invisible_list]
         this.visible_list = []
         this.completed_list = []
         this.failed_list = []
 
-        this.distractor_list = distractor_list
+        this.distractor_list = [...distractor_list]
 
     }
 
@@ -908,6 +907,8 @@ class Sequence {
         this.pending_sequence = []
         this.sequence = []
 
+        this.checkpoint = {}
+
         this.prev_step = -1
         this.curr_step = 0
     }
@@ -917,8 +918,8 @@ class Sequence {
             if(this.curr_step != this.prev_step) {
                 this.prev_step = this.curr_step
 
-                console.log("Step", this.curr_step)
-                this.sequence[this.curr_step]()
+                console.log("Step", this.curr_step, "Func:", this.sequence[this.curr_step][0])
+                this.sequence[this.curr_step][1]()
                 this.curr_step++
                 
             }
@@ -926,12 +927,8 @@ class Sequence {
 
     }
 
-    q(func) {
-        this.pending_sequence.push(func)
-    }
-
-    ql(func_list) {
-        this.pending_sequence = [...this.pending_sequence, ...func_list]
+    q(func, func_name="") {
+        this.pending_sequence.push([func_name,func])
     }
 
     pushQueue() {
@@ -949,6 +946,15 @@ class Sequence {
     stepBack() {
         this.curr_step--
     }
+
+    setCheckpoint(name) {
+        this.checkpoint[name] = this.curr_step
+    }
+
+    goCheckpoint(name) {
+        this.curr_step = this.checkpoint[name]
+        this.prev_step = this.curr_step-1
+    }
 }
 
 
@@ -959,16 +965,6 @@ class Training extends Phaser.Scene {
         super('Training')
     }
 
-    log(msg) {
-        console.log(`${msg}`)
-    }
-
-    debug(msg) {
-        if(general_config(1).debug_mode) {
-            console.log(`DEBUG:${msg}`)
-        }
-    }
-    
     init(data) {
         this.debug_mode = false
         this.rythm_list = data.rythm_list
@@ -984,17 +980,18 @@ class Training extends Phaser.Scene {
         this.load.image('r_key', 'assets/r_key.png');
         this.load.audio('tap', ['assets/chisel.mp3'])
     }
-  
+
 
     create(data) {
         this.s = new Sequence()
-        this.rm = new RythmManager(this)
         this.egg_list = ["redEgg", "yellowEgg", "blueEgg", "cyanEgg"]
+        this.egg_dict = {"redEgg":[1,1,2], "yellowEgg":[2,1,1], "blueEgg":[1,2,1], "cyanEgg":[2,1,2]}
 
         let element = document.getElementById('input-box')
-        this.left=true
 
-        this.trial_results = []
+        this.right=true
+
+
 
         this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
         this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
@@ -1007,6 +1004,10 @@ class Training extends Phaser.Scene {
         var QsetInstructionText = (text) => this.s.q(() => {this.training_text.setText(text)})
         var setInstructionText = (text) => {this.training_text.setText(text)}
         var Qlog = (text) => this.s.q(() => {console.log(text)})
+        var Qwarn = (text) => this.s.q(() => {console.warn(text)})
+        var Qerror = (text) => this.s.q(() => {console.error(text)})
+        var QmoveEgg = (x,y) => this.s.q(() => {this.image.setOrigin(0.5+x,0.5+y)}) 
+        var Qset = (variable, val) => this.s.q(() => {variable = val})
 
         var QstartTimer = () => this.s.q(() => {this.timer = Date.now()})
         var QendTimer = (func) => this.s.q(() => {func( Date.now()-this.timer )})
@@ -1031,26 +1032,31 @@ class Training extends Phaser.Scene {
             if(pointer) click_listener = this.input.on("pointerdown", whenInput);})
         }
 
+        var QplayBeat = () => {this.s.q(()=> {
+                this.sound.play(general_config(1).tap_sound)
+                this.sound.context.resume();
+                this.image.setAlpha(1)
+                this.time.addEvent({ delay: 100, callback: () => {this.image.setAlpha(0.5)}, callbackScope: this})})
+        }
+
         var QplayRythm = (rythm) => {
+            QplayBeat()
             for(var beat of rythm) {
                 Qwait(beat)
-                this.s.q(() => {
-                    this.sound.play(general_config(1).tap_sound)
-                    this.sound.context.resume();
-                    this.image.setAlpha(1)
-                    this.time.addEvent({ delay: 100, callback: () => {this.image.setAlpha(0.5)}, callbackScope: this})
-                })
+                QplayBeat()
             }
         }
 
         var QwaitRythmThenDo = (rythm, func, pointer=true, key="SPACE") => {
-            for(const beat of rythm) {
-                this.s.q(()=> {this.input_rythm = []})
+            this.s.q(()=> {this.input_rythm = []})
+            QwaitInput(pointer,key)
+            QplayBeat()
+            for(var i=0; i<rythm.length; i++) {
                 QstartTimer()
-                QwaitInput(this,pointer,key)
+                QwaitInput(pointer,key)
                 QendTimer((duration) => {this.input_rythm.push(duration)})
+                QplayBeat()
             }
-            Qlog("Test")
             this.s.q(func)
             this.s.q(() => {this.image.destroy()})
         }
@@ -1067,7 +1073,10 @@ class Training extends Phaser.Scene {
             return image
         }
 
-        var QgetRandomEggIntoThisImage = () => this.s.q(() => {this.image = getEgg(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)})
+        var QgetRandomEggIntoThisImage = () => this.s.q(() => {this.image = getEgg(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)}, "getRandomImageIntoThisImage")
+
+        var QsetCheckpoint = (name) => this.s.q(() => {this.s.setCheckpoint(name)})
+        var QgoCheckpoint = (name) => this.s.q(() => {this.s.goCheckpoint(name)})
 
 
 
@@ -1076,25 +1085,39 @@ class Training extends Phaser.Scene {
         QwaitInput(true,"SPACE")
         QhideInputBoxElement()
         QresumeSoundContext()
+        QsetCheckpoint("trial")
+        QsetInstructionText("")
         Qwait(2000)
         QfillEggManagerWith4Eggs()
         for(var i=0; i<this.egg_list.length; i++) {
             QgetRandomEggIntoThisImage()
-            QplayRythm([0,300,600,300]) 
+            Qwarn(this.egg_list)
+            QplayRythm([300,600,300])
             Qwait(1000)
-            QsetInstructionText("Please repeat the rythm as you have heard it")
-            QwaitRythmThenDo([0,1,2,1], () => {
-                var rythm_match = rythmsMatch(this.input_rythm, [0,1,2,1])
-                console.log(rythm_match)
-                if(rythm_match) {
+            QmoveEgg(0,-1.2)
+            QsetInstructionText("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg")
+            QwaitRythmThenDo([1,2,1], () => {
+                if(rythmsMatch(this.input_rythm, [1,2,1])) {
                     setInstructionText("Correct!")
                 }else{
                     setInstructionText("Incorrect :/")
+                    this.right=false
                 }
             })
             Qwait(2000)
-            QsetInstructionText("")
+            QsetInstructionText("")   
         }
+
+        this.s.q(() => {
+            if(!this.right) {
+                this.right=true
+                setInstructionText("Try again")
+                this.s.goCheckpoint("trial")}
+        })
+
+
+        
+        QsetInstructionText("Done!")
         
         this.s.pushQueue()
 
