@@ -1073,7 +1073,7 @@ class Training extends Phaser.Scene {
             return image
         }
 
-        var QgetRandomEggIntoThisImage = () => this.s.q(() => {this.image = getEgg(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)}, "getRandomImageIntoThisImage")
+        var QgetRandomEggIntoThisImage = () => this.s.q(() => {this.image = getEgg(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)})
 
         var QsetCheckpoint = (name) => this.s.q(() => {this.s.setCheckpoint(name)})
         var QgoCheckpoint = (name) => this.s.q(() => {this.s.goCheckpoint(name)})
