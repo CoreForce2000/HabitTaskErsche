@@ -44,7 +44,7 @@ function general_config(speed) {
 
         //Rythm Error Margin
 
-        error_margin: 0.25,
+        error_margin: 0.4,
 
         //Higher Level Parameters
 
@@ -288,52 +288,34 @@ function unique(arr) {
 	return arr.filter((v, i, a) => a.indexOf(v) === i);
 }
 
-function rythmsMatch(input_rythm, rythm) {
+function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
 
-    //How do we compare the inserted rythm with the desired one?
-    //Rythm is defined in config in beats, which is the smallest unit
-    //Typically, 1 is short and 2 beats are long
+    var ir_total_duration = sumArray(ir)
+    var ar_total_beats = sumArray(ar)
 
-    //We first summarize the number of beats in a rythm (should be the same for all rythms)
-    var total_duration = sumArray(input_rythm)
-    var total_beats_actual_rythm = sumArray(rythm)
-
-    //then we divide the total duration by number of beats to get the length of all beats
-    var beat_duration = total_duration / total_beats_actual_rythm
+    var ir_mean_beat_duration = ir_total_duration / ar_total_beats
     
+    var rel_e_list = []
+    for(let i=0; i<ar.length; i++) {
+        var ir_beat_duration = ir[i]
+        var ar_beat_duration = ar[i] * ir_mean_beat_duration
 
-    var relative_error_list = []
-    
-    for(let i=0; i<rythm.length; i++) {
-        
-        var input_break = input_rythm[i]
+        var rel_e = Math.abs(ir_beat_duration - ar_beat_duration) / ar_beat_duration //Relative Error
 
-        //Finally, we check for each entry if the number of beats times beat length (necessary length) Matches the one inserted
-        var actual_break = rythm[i] * beat_duration
-        
-        var error = Math.abs(input_break - actual_break)
-        
-        var relative_error = error / actual_break
+        console.log("Relative error:", rel_e)
 
-        relative_error_list.push(relative_error)
-
-        //Here we find the percentage divergence of the clicked with the ideal, and see if its below the threshold
-        //If no, we break (fail), if yes, we continue until the end (success)
-        //We are using percentage error, margin defined in config
-        if(relative_error > general_config(1).error_margin) {
+        if(rel_e > general_config(1).error_margin) { //Relative Error
             return false
+        }else {
+            rel_e_list.push(rel_e)
         }
     }
+    //var avg_rel_e = (sumArray(rel_e_list) / rel_e_list.length)
+    var max_rel_e = (sumArray(rel_e_list) / rel_e_list.length)
+    console.log("Max. Relative error:", max_rel_e)
 
-    var avg_relative_error = (sumArray(relative_error_list) / relative_error_list.length)
-
-    console.log(avg_relative_error)
-
-    rythm_obj.error = avg_relative_error
-    
     return true
-
-    }
+}
 
 
 
@@ -927,17 +909,18 @@ class Sequence {
         this.sequence = []
 
         this.prev_step = -1
-        this.step = 0
+        this.curr_step = 0
     }
 
     play() {
-        if(this.sequence.length > this.step) {
-            if(this.step != this.prev_step) {
-                this.prev_step = this.step
+        if(this.sequence.length > this.curr_step) {
+            if(this.curr_step != this.prev_step) {
+                this.prev_step = this.curr_step
 
-                this.sequence[this.step]()
-                console.log("Step", this.step)
-                this.step++
+                console.log("Step", this.curr_step)
+                this.sequence[this.curr_step]()
+                this.curr_step++
+                
             }
         }
 
@@ -945,6 +928,10 @@ class Sequence {
 
     q(func) {
         this.pending_sequence.push(func)
+    }
+
+    ql(func_list) {
+        this.pending_sequence = [...this.pending_sequence, ...func_list]
     }
 
     pushQueue() {
@@ -955,66 +942,12 @@ class Sequence {
         this.sequence = [...this.pending_sequence, ...this.sequence]
     }
 
-    startTimer() {
-        this.q(()=> {this.timer = Date.now()})
+    step() {
+        this.curr_step++
     }
 
-    endTimer(func) {
-        this.q(()=> { func( Date.now()-this.timer )})
-    }
-
-    wait(scene, delay) {
-        
-        this.q(() => {
-            this.step--
-            scene.time.addEvent({delay: delay, callback: function() {
-                this.step++
-            }, callbackScope: this});
-        })
-    }
-
-    waitInput(scene, pointer=false, key="SPACE") {
-        this.q(() => {
-            this.step--
-            var key_listener = 0
-            var click_listener = 0
-        
-            var whenInput = () => {
-                console.log("Key/Click down!")
-                this.step++
-                if(key_listener != 0) {
-                    scene.input.keyboard.removeKey(key);
-                    key_listener.removeListener("down")
-                }
-                if(click_listener != 0) {
-                    click_listener.removeListener("pointerdown")
-                }
-                
-            }
-        
-            if(key != "") {
-                key_listener = scene.input.keyboard.addKey(key).on('down', whenInput);
-            }
-            if(pointer) {
-                click_listener = scene.input.on("pointerdown", whenInput)
-            }              
-        })
-    }
-
-    waitRythm(scene, rythm, pointer=false, key="SPACE") {
-        for(const beat of rythm) {
-            this.q(()=> {this.global_beat = []})
-            this.startTimer()
-            this.waitInput(scene,pointer,key)
-            this.endTimer((duration)=> {this.global_beat.push(duration)})
-        }
-        this.q(()=> {
-            if(rythmsMatch(this.global_beat, rythm)) {
-                scene.left=true
-            }else{
-                scene.left=false
-            }
-        })
+    stepBack() {
+        this.curr_step--
     }
 }
 
@@ -1051,124 +984,121 @@ class Training extends Phaser.Scene {
         this.load.image('r_key', 'assets/r_key.png');
         this.load.audio('tap', ['assets/chisel.mp3'])
     }
-
-
-
-    q_playRythm(rythm) {
-        for(var beat of rythm) {
-            this.s.wait(this, beat)
-            this.s.q(() => {
-                this.sound.play(general_config(1).tap_sound)
-                this.sound.context.resume();
-                this.image.setAlpha(1)
-                this.time.addEvent({ delay: 100, callback: () => {this.image.setAlpha(0.5)}, callbackScope: this})
-            })
-        }
-    }
-
-    q_setupStuff() {
-        this.s.q(() => {
-            this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
-            this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
-            this.training_text.setOrigin(0.5);
-            this.sound.context.resume()})
-    }
-
-    q_waitForRythm(rythm, func) {
-        this.s.q(() => {
-            this.s.step--
-            this.rm.addRythmListener(this.image, rythm, "tap", true, func)})
-    }
-
-    q_hideInputBox() {
-        this.s.q(() => { //Hide Display after first        
-            let element = document.getElementById('input-box')
-            element.style.display = "none"
-        })
-    }
-
-    q_generateEggImageAndLoadInThis() {
-        this.s.q(() => {
-            this.image = this.add.image(general_config(1).width/2,general_config(1).height/2, "redEgg")
-            this.image.setAlpha(0.5)
-            this.image.setInteractive({ useHandCursor: true })
-        })
-    }
-
-    q_setText(text) {
-        this.s.q(() => {
-            this.training_text.setText(text)
-        })
-    }
-
-    q_doIfTrueElse(bool, funcTrue, funcFalse) {
-        this.s.q(() => {
-            if(bool) {
-                funcTrue()
-            }else{
-                funcFalse()
-            }
-        })
-    }
-
-
-    addImage(x,y,image, hover=true, scale=1, alpha=1 ) {
-        var image = this.add.image(general_config(1).width/2,general_config(1).height/2, "redEgg")
-        image.setInteractive({ useHandCursor: true })
-        image.setAlpha(alpha)
-        image.setScale(scale)
-
-        image.on('pointerover',function() {
-            this.currently_hovering = image
-        })
-        image.on('pointerout',function() {
-            this.currently_hovering = 0
-        })
-
-        return image
-    }
-
-
+  
 
     create(data) {
         this.s = new Sequence()
         this.rm = new RythmManager(this)
         this.egg_list = ["redEgg", "yellowEgg", "blueEgg", "cyanEgg"]
 
+        let element = document.getElementById('input-box')
         this.left=true
-        
 
         this.trial_results = []
 
-        this.s.waitInput(this,true,"SPACE")
-        this.q_hideInputBox()
-        this.q_setupStuff()
-        this.s.wait(this,2000)
+        this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
+        this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
+        this.training_text.setOrigin(0.5);
 
-        for(var i=0; i<this.egg_list.length; i++) {
-            this.s.q(() => {
-                this.em = new ListManager(this.egg_list)
-                this.image = this.addImage(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)})
 
-            this.q_playRythm([0,300,600,300]) 
-            this.s.wait(this, 1000)
-            this.q_setText("Please repeat the rythm as you have heard it")
-            this.s.waitRythm(this, [0,1,2,1])
-            this.s.q(() => {
-                if(this.left) {
-                    this.q_setText("Correct")
-                }else{
-                    this.q_setText("Incorrect")
-                }})
-            this.s.wait(this,2000)
-            this.q_setText("")
+        var QhideInputBoxElement = () => this.s.q(()=>{element.style.display = "none"})
+        var QresumeSoundContext = () => this.s.q(() => {this.sound.context.resume()})
+        var QfillEggManagerWith4Eggs = () => this.s.q(() => {this.em = new ListManager(this.egg_list)})
+        var QsetInstructionText = (text) => this.s.q(() => {this.training_text.setText(text)})
+        var setInstructionText = (text) => {this.training_text.setText(text)}
+        var Qlog = (text) => this.s.q(() => {console.log(text)})
+
+        var QstartTimer = () => this.s.q(() => {this.timer = Date.now()})
+        var QendTimer = (func) => this.s.q(() => {func( Date.now()-this.timer )})
+
+        var Qwait = (delay) => {this.s.q(() => {
+            this.s.stepBack()
+            var wait_delay=delay
+            this.time.addEvent({delay: wait_delay, callback: () => {this.s.step()}, callbackScope: this})})
+        }
+    
+        var QwaitInput = (pointer=false, key="SPACE") => {this.s.q(() => {
+            this.s.stepBack()
+            var key_listener = 0
+            var click_listener = 0
             
+            var whenInput = () => {
+                this.s.step()
+                if(key_listener != 0) {this.input.keyboard.removeKey(key); key_listener.removeListener("down"); key_listener=0;}
+                if(click_listener != 0) {click_listener.removeListener("pointerdown"); click_listener=0;}
+            }
+            if(key != "") key_listener = this.input.keyboard.addKey(key).on('down', whenInput);
+            if(pointer) click_listener = this.input.on("pointerdown", whenInput);})
+        }
+
+        var QplayRythm = (rythm) => {
+            for(var beat of rythm) {
+                Qwait(beat)
+                this.s.q(() => {
+                    this.sound.play(general_config(1).tap_sound)
+                    this.sound.context.resume();
+                    this.image.setAlpha(1)
+                    this.time.addEvent({ delay: 100, callback: () => {this.image.setAlpha(0.5)}, callbackScope: this})
+                })
+            }
+        }
+
+        var QwaitRythmThenDo = (rythm, func, pointer=true, key="SPACE") => {
+            for(const beat of rythm) {
+                this.s.q(()=> {this.input_rythm = []})
+                QstartTimer()
+                QwaitInput(this,pointer,key)
+                QendTimer((duration) => {this.input_rythm.push(duration)})
+            }
+            Qlog("Test")
+            this.s.q(func)
+            this.s.q(() => {this.image.destroy()})
+        }
+
+        var getEgg = (x,y,image, hover=true, scale=1, alpha=1 ) => {
+            var image = this.add.image(x,y,image)
+            image.setInteractive({ useHandCursor: true })
+            image.setAlpha(alpha)
+            image.setScale(scale)
+    
+            if(hover) image.on('pointerover',() => {this.currently_hovering = image});
+            if(hover) image.on('pointerout', () => {this.currently_hovering = 0});
+
+            return image
+        }
+
+        var QgetRandomEggIntoThisImage = () => this.s.q(() => {this.image = getEgg(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5)})
+
+
+
+        //Sequence Start
+
+        QwaitInput(true,"SPACE")
+        QhideInputBoxElement()
+        QresumeSoundContext()
+        Qwait(2000)
+        QfillEggManagerWith4Eggs()
+        for(var i=0; i<this.egg_list.length; i++) {
+            QgetRandomEggIntoThisImage()
+            QplayRythm([0,300,600,300]) 
+            Qwait(1000)
+            QsetInstructionText("Please repeat the rythm as you have heard it")
+            QwaitRythmThenDo([0,1,2,1], () => {
+                var rythm_match = rythmsMatch(this.input_rythm, [0,1,2,1])
+                console.log(rythm_match)
+                if(rythm_match) {
+                    setInstructionText("Correct!")
+                }else{
+                    setInstructionText("Incorrect :/")
+                }
+            })
+            Qwait(2000)
+            QsetInstructionText("")
         }
         
         this.s.pushQueue()
 
         
-
         
         //this.score = 0
 
