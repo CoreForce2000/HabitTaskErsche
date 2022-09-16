@@ -835,14 +835,14 @@ class Study extends Phaser.Scene {
                                         this.main_text.setText('');
                                         this.slide++
             }else if(this.slide == 5) {
-                                        //this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"blueEgg":[1,2,1], "cyanEgg":[2,1,2]}})
-                                        //this.scene.pause()
+                                        this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"blueEgg":[1,2,1], "cyanEgg":[2,1,2]}})
+                                        this.scene.pause()
 
                                         this.main_text.setText('');
                                         this.slide++
             }else if(this.slide == 6) {
-                                        //this.scene.launch('Training', { successive_correct_required: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[2,1,2]}})
-                                        //this.scene.pause()
+                                        this.scene.launch('Training', { successive_correct_required: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[2,1,2]}})
+                                        this.scene.pause()
 
                                         this.main_text.setText('');
                                         this.slide++
@@ -1231,7 +1231,7 @@ class Training extends Phaser.Scene {
         
         s.while(()=>{return !s.right})
             
-        s.q(()=> setInstruction("Done"))
+        s.q(()=> setInstruction(""))
         s.q(()=> wait(1000))
         s.q(()=> {this.scene.resume('Study'); this.scene.stop()})
         s.q(()=> wait(1))
@@ -1254,7 +1254,7 @@ class Training extends Phaser.Scene {
             sequence.play()
         }
 
-        if(this.debug) {
+        if(this.debug_mode) {
             this.debug_fps_text.setText(`
                                         ${((1000/delta/3).toFixed()*3)}fps
                                         ${((delta/3).toFixed()*3)}ms
@@ -1300,7 +1300,7 @@ class Game extends Phaser.Scene {
     }
 
     init(data) {
-        this.debug_mode = true
+        this.debug_mode = false
         this.prev_time = 0
 
         this.speed = 1
@@ -1520,7 +1520,7 @@ class Game extends Phaser.Scene {
             },callbackScope: this});
         }
 
-        if(this.debug) {
+        if(this.debug_mode) {
             this.debug_fps_text.setText(`
                                         ${((1000/delta/3).toFixed()*3)}fps
                                         ${((delta/3).toFixed()*3)}ms
