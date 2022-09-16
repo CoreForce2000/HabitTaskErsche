@@ -35,12 +35,12 @@ function general_config(speed) {
 
         //Ingame: Phase Parameters
 
-        egg_drop_frequency: 2000 * (1/speed),
-        egg_exist_duration: 1500 * (1/speed),
-        egg_stay_after_collect_duration: 0 * (1/speed),
+        egg_drop_frequency: 3000 + (Math.random() * 2000), //
+        egg_exist_duration: 2000 + (Math.random() * 1500), //
+        egg_stay_after_collect_duration: 0 ,
 
-        diamond_exist_duration: 1500 * (1/speed),
-        location_cooldown_duration: 2500 * (1/speed),
+        diamond_exist_duration: 1500 ,
+        location_cooldown_duration: 2500 ,
 
         //Rythm Error Margin
 
@@ -297,23 +297,18 @@ function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
 
     var ir_mean_beat_duration = ir_total_duration / ar_total_beats
     
-    var rel_e_list = []
+    var max_rel_e = 0
     for(let i=0; i<ar.length; i++) {
         var ir_beat_duration = ir[i]
         var ar_beat_duration = ar[i] * ir_mean_beat_duration
 
         var rel_e = Math.abs(ir_beat_duration - ar_beat_duration) / ar_beat_duration //Relative Error
 
-        if(rel_e > general_config(1).error_margin) { //Relative Error
-            return false
-        }else {
-            rel_e_list.push(rel_e)
+        if(rel_e > max_rel_e) {
+            max_rel_e = rel_e
         }
     }
-    //var avg_rel_e = (sumArray(rel_e_list) / rel_e_list.length)
-    console.log("Max. Relative error:", Math.max(rel_e_list))
-
-    return true
+    return max_rel_e
 }
 
 
@@ -755,7 +750,22 @@ class Study extends Phaser.Scene {
     }
 
     preload() {
+        this.load.image('whitescreen', 'assets/background_title.jpg');
+        this.load.image('r_key', 'assets/r_key.png');
+        this.load.audio('tap', ['assets/chisel.mp3'])
+
+        this.load.image('cyanEgg', 'assets/eggCyanShadow.png');
+        this.load.image('blueEgg', 'assets/eggBlueShadow.png');
+        this.load.image('redEgg', 'assets/eggRedShadow.png');
+        this.load.image('yellowEgg', 'assets/eggYellowShadow.png');
+        this.load.image('diamond', 'assets/diamondShadow.png');
+        this.load.image('fail', 'assets/fail.png');
+        this.load.image('woods', 'assets/background_medium.jpg');
+        this.load.image('woods_layer', 'assets/background_layer.png');
+        this.load.image('safe', 'assets/safe.png');
         this.load.image('white', 'assets/background_title.jpg');
+        this.load.audio('tap', ['assets/chisel.mp3'])
+        this.load.audio('diamond', ['assets/diamond.mp3'])
     }
 
     create(data) {
@@ -819,63 +829,75 @@ class Study extends Phaser.Scene {
             }else if(this.slide == 3) {
                                         this.main_text.setText(slide_text.practice1);
             }else if(this.slide == 4) {
-                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practise1_reps, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}})
+                                        this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"yellowEgg":[2,1,1], "redEgg":[1,1,2]}})
                                         this.scene.pause()
 
-                                        this.main_text.setText('Loading Task...');
+                                        this.main_text.setText('');
                                         this.slide++
             }else if(this.slide == 5) {
-                                        this.main_text.setText(slide_text.phase1_p1);
+                                        //this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"blueEgg":[1,2,1], "cyanEgg":[2,1,2]}})
+                                        //this.scene.pause()
+
+                                        this.main_text.setText('');
+                                        this.slide++
             }else if(this.slide == 6) {
-                                        this.main_text.setText(slide_text.phase1_p2);
+                                        //this.scene.launch('Training', { successive_correct_required: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[2,1,2]}})
+                                        //this.scene.pause()
+
+                                        this.main_text.setText('');
+                                        this.slide++
             }else if(this.slide == 7) {
+                                        this.main_text.setText(slide_text.phase1_p1);
+            }else if(this.slide == 8) {
+                                        this.main_text.setText(slide_text.phase1_p2);
+            }else if(this.slide == 9) {
                                         this.scene.launch('Game', { phase_id: 1, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
-            }else if(this.slide == 8) {
-                                        this.main_text.setText(slide_text.phase2_p1);
-            }else if(this.slide == 9) {
-                                        this.main_text.setText(slide_text.phase2_p2);
             }else if(this.slide == 10) {
+                                        this.main_text.setText(slide_text.phase2_p1);
+            }else if(this.slide == 11) {
+                                        this.main_text.setText(slide_text.phase2_p2);
+            }else if(this.slide == 12) {
                                         this.scene.launch('Game', { phase_id: 2, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
-            }else if(this.slide == 11) {
+            }else if(this.slide == 13) {
                                         //exportToCsv(game_data_columns, game_data)
                                         this.main_text.setText(slide_text.practice_2_and_phase_3_p1);
-            }else if(this.slide == 12) {
-                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
-            }else if(this.slide == 13) {
-                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p3);
             }else if(this.slide == 14) {
-                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p2);
             }else if(this.slide == 15) {
-                                        this.scene.launch('Training', { successive_correct_required: general_config(1).practice2_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
-                                        this.scene.pause()
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p3);
+            }else if(this.slide == 16) {
+                                        this.main_text.setText(slide_text.practice_2_and_phase_3_p4);
+            }else if(this.slide == 17) {
+                                        //this.scene.launch('Training', { successive_correct_required: general_config(1).practice2_reps, rythm_list: [[2,1,1],[1,1,2],[1,2,1],[2,2,1],[2,2,1],[2,2,1],[2,2,1]]})
+                                        //this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
-            }else if(this.slide == 16) {
+            }else if(this.slide == 18) {
                                         this.main_text.setText(slide_text.phase_3);
-            }else if(this.slide == 17) {
+            }else if(this.slide == 19) {
                                         this.scene.launch('Game', { phase_id: 3, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++
-            }else if(this.slide == 18) {
+            }else if(this.slide == 20) {
                                         this.main_text.setText(slide_text.phase4);
-            }else if(this.slide == 19) {
+            }else if(this.slide == 21) {
                                         this.scene.launch('Game', { phase_id: 4, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
                                         this.scene.pause()
 
                                         this.main_text.setText('Loading Task...');
                                         this.slide++         
-            }else if(this.slide == 20) {
+            }else if(this.slide == 22) {
                                         this.main_text.setText(slide_text.finish);
                                         exportToCsv(game_data_columns, game_data)
             }
@@ -908,27 +930,35 @@ class Sequence {
         this.sequence = []
 
         this.checkpoint = {}
+        this.loop_counter = []
 
         this.prev_step = -1
         this.curr_step = 0
     }
 
     play() {
-        if(this.sequence.length > this.curr_step) {
-            if(this.curr_step != this.prev_step) {
+        if(this.sequence.length-1 > this.curr_step) {
+            while(this.curr_step != this.prev_step) {
                 this.prev_step = this.curr_step
 
-                console.log("Step", this.curr_step, "Func:", this.sequence[this.curr_step][0])
-                this.sequence[this.curr_step][1]()
+                console.log("Step", this.curr_step)
+                this.sequence[this.curr_step]()
                 this.curr_step++
                 
             }
         }
-
     }
 
-    q(func, func_name="") {
-        this.pending_sequence.push([func_name,func])
+    q(func) {
+        this.pending_sequence.push(func)
+    }
+
+    r(func) {
+        func()
+    }
+
+    log(text) {
+        this.q(()=> console.log(text))
     }
 
     pushQueue() {
@@ -955,6 +985,41 @@ class Sequence {
         this.curr_step = this.checkpoint[name]
         this.prev_step = this.curr_step-1
     }
+
+    checkpoint(name) {
+        this.setCheckpoint(name)
+    }
+
+    jump(name) {
+        this.goCheckpoint(name)
+    }
+
+    loop() {
+        this.q(()=> {
+            console.log("LOOP")
+            this.loop_counter.push(0)
+            this.loop_counter[this.loop_counter.length-1]=0
+            this.setCheckpoint(this.loop_counter.length-1)
+        })
+    }
+
+    getCounter() {
+        return this.loop_counter[this.loop_counter.length-1]
+    }
+
+    while(func) {
+        this.q(()=> {
+            this.loop_counter[this.loop_counter.length-1]++
+            if(func()) {
+                console.log("ITERATE")
+                this.goCheckpoint(this.loop_counter.length-1);
+                
+            }else{
+                console.log("END LOOP")
+                this.loop_counter.pop()
+            }
+        })
+    }
 }
 
 
@@ -967,18 +1032,12 @@ class Training extends Phaser.Scene {
 
     init(data) {
         this.debug_mode = false
+        this.successive_correct_required = data.successive_correct_required
         this.rythm_list = data.rythm_list
     }
     
     preload() {
-        this.load.image('cyanEgg', 'assets/cyanEgg.png');
-        this.load.image('blueEgg', 'assets/blueEgg.png');
-        this.load.image('redEgg', 'assets/redEgg.png');
-        this.load.image('yellowEgg', 'assets/yellowEgg.png');
 
-        this.load.image('whitescreen', 'assets/background_title.jpg');
-        this.load.image('r_key', 'assets/r_key.png');
-        this.load.audio('tap', ['assets/chisel.mp3'])
     }
 
     
@@ -996,35 +1055,32 @@ class Training extends Phaser.Scene {
 
 
     create(data) {
-        this.s = new Sequence()
-        this.egg_list = ["redEgg", "yellowEgg", "blueEgg", "cyanEgg"]
-        this.egg_dict = {"redEgg":[1,1,2], "yellowEgg":[2,1,1], "blueEgg":[1,2,1], "cyanEgg":[2,1,2]}
+        this.debug=true
+
+        this.debug_phase = 0
+
+        this.sequence_list = []
+        var s = new Sequence()
 
         let element = document.getElementById('input-box')
 
-        this.right=true
 
-        this.screen_obj = this.add.image(general_config(1).width/2,general_config(1).height/2, "whitescreen")
-        this.training_text = this.add.text(general_config(1).width/2,general_config(1).height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
-        this.training_text.setOrigin(0.5);
-
-
-        var startTimer = () => {this.timer = Date.now()}
-        var endTimer = () => {return Date.now()-this.timer }
+        var startTimer = () => {s.timer = Date.now()}
+        var endTimer = () => {return Date.now()-s.timer }
 
         var wait = (delay) => {
-            this.s.stepBack()
+            s.stepBack()
             var wait_delay=delay
-            this.time.addEvent({delay: wait_delay, callback: () => {this.s.step()}, callbackScope: this})
+            this.time.addEvent({delay: wait_delay, callback: () => {s.step()}, callbackScope: this})
         }
     
         var waitClickOrKey = (key="SPACE") => {
-            this.s.stepBack()
+            s.stepBack()
             var key_listener;
             var click_listener;
             
             var whenInput = () => {
-                this.s.step()
+                s.step()
                 this.input.keyboard.removeKey(key); key_listener.removeListener("down"); key_listener=0
                 click_listener.removeListener("pointerdown"); click_listener=0
             }
@@ -1033,19 +1089,19 @@ class Training extends Phaser.Scene {
         }
 
         var waitClick = () => {
-            this.s.stepBack()
+            s.stepBack()
 
             var click_listener = this.input.on("pointerdown", () => {
-                this.s.step()
+                s.step()
                 click_listener.removeListener("pointerdown");
             })
         }
 
         var waitKey = (key="SPACE") => {
-            this.s.stepBack()
+            s.stepBack()
 
             var key_listener = this.input.keyboard.addKey(key).on('down', () => {
-                this.s.step()
+                s.step()
                 this.input.keyboard.removeKey(key) 
                 key_listener.removeListener("down")
             });
@@ -1053,64 +1109,158 @@ class Training extends Phaser.Scene {
 
         var playBeat = (sound) => {this.sound.play(sound); this.sound.context.resume()}
         var visualBeat = (image) => {image.setAlpha(1);this.time.addEvent({ delay: 100, callback: () => {image.setAlpha(0.5)}, callbackScope: this})}
+        var clearInstruction = () => s.training_text.setText("")
+        var setInstruction = (text) => s.training_text.setText(text)
+        var resetEggs = () => {return new ListManager(Object.keys(this.rythm_list))}
+        var getRandomEgg = () => {return this.makeEgg(width/2, height/2, s.em.getRandom(), true, 1, 0.5)}
 
-        var playRythm = (rythm) => {
-            this.s.q("play&flash beat",         ()=> {playBeat("tap"); visualBeat(this.image)})
-            for(var beat of rythm) {
-                this.s.q("wait len(beat)",          () => wait(beat))
-                this.s.q("play&flash beat",         ()=> {playBeat("tap"); visualBeat(this.image)})
-            }
+
+
+        var q_playRythm = (getRythm, getImage) => {
+            s.q(()=> {playBeat("tap"); visualBeat(getImage())})
+            s.loop()
+                s.q(()=> wait(getRythm()[s.getCounter()]*300))
+                s.q(()=> {playBeat("tap"); visualBeat(getImage())})
+            s.while(()=>{return (s.getCounter() < getRythm().length)})
         }
 
-        var waitRythm = (rythm, func, pointer=true, key="SPACE") => {
-            this.s.q("make empty rythm list",   ()=> {this.input_rythm = []})
-            this.s.q("waitInput",               ()=> waitClickOrKey())
-            this.s.q("play&flash beat",         ()=> {playBeat("tap"); visualBeat(this.image)})
-            
-
-            for(var i=0; i<rythm.length; i++) {
-                this.s.q("start timer", ()=> startTimer())
-                this.s.q("waitInput",               ()=> waitClickOrKey())
-                this.s.q("end timer and feed time into rythm list", ()=> this.input_rythm.push(endTimer()))
-                this.s.q("play&flash beat",         ()=> {playBeat("tap"); visualBeat(this.image)})
-            }
-            this.s.q(() => func(rythmsMatch(this.input_rythm, [1,2,1])))
+        var q_waitRythm = (getRythm, funcCorr, funcParcorr, funcIncorr) => {
+            s.q(()=> {s.input_rythm = []})
+            s.q(()=> waitClickOrKey())
+            s.q(()=> {playBeat("tap")})
+            s.loop()
+                s.q(()=> startTimer())
+                s.q(()=> waitClickOrKey())
+                s.q(()=> s.input_rythm.push(endTimer()))
+                s.q(()=> {playBeat("tap")})
+                s.while(()=>{return (s.getCounter() < getRythm().length)})
+            s.q(() => s.rythm_accuracy = rythmsMatch(s.input_rythm, getRythm()))
+            s.q(() => {
+                if((s.rythm_accuracy < 0.3)) {
+                    funcCorr()
+                }else if(s.rythm_accuracy >= 0.45) {
+                    funcIncorr()
+                }else {
+                    funcParcorr()
+                }
+            })
         }
 
 
+        //SEQUENCE START
 
-        //Sequence Start
 
-        this.s.q("wait for input to begin",     ()=> waitClickOrKey())
-        this.s.q("hide input box",              ()=> element.style.display = "none")
-        this.s.q("resume sound context",        ()=> this.sound.context.resume())
-        this.s.q("set checkpoint `round`",      ()=> this.s.setCheckpoint("round"))
-        this.s.q("clear instruction",           ()=> this.training_text.setText(""))
-        this.s.q("wait 2s",                     ()=> wait(2000))
-        this.s.q("add 4 eggs to queue",         ()=> this.em = new ListManager(Object.keys(this.egg_dict)))
-
-        for(var i=0; i<this.egg_list.length; i++) {
-            this.s.q("get random egg",              ()=> this.image = this.makeEgg(width/2, height/2, this.em.getRandom(), true, 0.5, 0.5))
-            this.s.q("get rythm",                   ()=> this.rythm = this.egg_dict[this.image.texture.key])
-            this.s.q("play rythm",                  ()=> playRythm(this.rythm))
-            this.s.q("wait 1s",                     ()=> wait(1000))
-            this.s.q("move egg below text",         ()=> this.image.setOrigin(0.5,-1))
-            this.s.q("instruct to repeat rythm",    ()=> this.training_text.setText("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg"))
-            this.s.q("listen to rythm",             ()=> this.rythm_correct = waitRythm(this.rythm, (correct)=>this.rythm_correct = correct))
-            this.s.q("if rythm correct",            ()=> {if(this.rythm_correct) {this.training_text.setText("Correct!")}})
-            this.s.q("if rythm not correct",        ()=> {if(!this.rythm_correct) {this.training_text.setText("Incorrect :/"); this.right=false}})
-            this.s.q("wait 1s",                     ()=> wait(1000))
-            this.s.q("clear instruction",           ()=> this.training_text.setText(""))  
-        }
-
-        this.s.q("if not success go checkpoint `round`", () => {if(!this.right) {this.right=true;this.training_text.setText("Try again");this.s.goCheckpoint("trial")}})
-        this.s.q("instruction success",           ()=> this.training_text.setText("Done"))  
+        s.screen_obj = this.add.image(width/2,height/2, "whitescreen")
+        s.training_text = this.add.text(width/2,height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
+        s.training_text.setOrigin(0.5)
+        s.right=true
+        this.debug_fps_text = this.add.text(0,0, "", { fontSize: '30px', fill: '#000  ', align: 'left' , fontFamily: "calibri"})
+        element.style.display = "none"
         
-        this.s.pushQueue()
+        s.q(()=> this.sound.context.resume())
+        
+
+        s.loop()
+            //Reproduce Rythm
+            
+                s.q(()=> this.debug_phase = 0)
+                s.q(()=> clearInstruction())
+                s.q(()=> s.em = resetEggs())
+                s.q(()=> wait(1000))
+
+                s.loop()
+                    s.q(()=> s.image = getRandomEgg())
+                    s.q(()=> s.rythm = this.rythm_list[s.image.texture.key])
+
+                    s.loop()
+                        s.q(()=> clearInstruction())
+                        s.q(()=> s.image.setOrigin(0.5,0.5))
+                        s.q(()=> s.image.setAlpha(0.5))
+                        s.q(()=> wait(1000))
+                        q_playRythm(()=>{return s.rythm}, ()=>{return s.image})
+                        s.q(()=> wait(1000))
+                        s.q(()=> s.image.setOrigin(0.5,-0.5))
+                        s.q(()=> s.image.setAlpha(1))
+                        s.q(()=> setInstruction("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg"))
+                        q_waitRythm(()=>{return s.rythm},
+                                    ()=>{setInstruction("Correct!"),s.rythm_correct=true},
+                                    ()=>{setInstruction("Almost! Try Again"),s.rythm_correct=false},
+                                    ()=>{setInstruction("Incorrect :/ Please try again"),s.rythm_correct=false})
+                        s.q(()=> wait(1000))
+                    s.while(()=>{return !s.rythm_correct})
+
+                    s.q(()=> s.image.destroy())
+                    s.q(()=> clearInstruction())
+                s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length})
+
+                //Recollect Rythm
+
+                s.setCheckpoint("RetryTest")
+                
+                s.loop()
+                    s.q(()=> this.debug_phase = s.getCounter()+1)
+                    s.q(()=> s.right = true)
+                    s.q(()=> s.em = resetEggs())
+                    s.q(()=> setInstruction(`Trial ${s.getCounter()+1}/${this.successive_correct_required}`))
+                    s.q(()=> wait(1000))
+
+                    s.loop()
+                        s.q(()=> {wait(500)})
+                        s.q(()=> s.image = getRandomEgg())
+                        s.q(()=> s.image.setOrigin(0.5,-0.5))
+                        s.q(()=> s.rythm = this.rythm_list[s.image.texture.key])
+                        
+                        s.loop()
+                            s.q(()=> setInstruction("Please tap the rythm that was associated with this egg"))
+                            s.q(()=> s.image.setAlpha(1))
+                            q_waitRythm(()=>{return s.rythm},
+                                ()=> {setInstruction("Correct!");s.rythm_correct=true},
+                                ()=> {setInstruction("Almost!");s.rythm_correct=false},
+                                ()=> {setInstruction("Incorrect");s.rythm_correct=false})
+                            s.q(()=> wait(1000))
+                            s.q(()=> {if(!s.rythm_correct & (s.getCounter() < 1)) {setInstruction("Try again"); wait(1000)}})
+                            s.q(()=> {if(!s.rythm_correct & (s.getCounter() >= 1)) {s.right=false} })
+                            s.q(()=> clearInstruction())
+                        s.while(()=> {return (!s.rythm_correct & (s.getCounter() < 2))})
+
+                        s.q(()=> s.image.destroy())
+                        s.q(()=> wait(500))
+                        s.q(()=> clearInstruction())
+                    s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length})
+                s.while(()=>{return ((s.getCounter() < this.successive_correct_required) & (s.right == true))}) //Number of Trials
+        
+        s.while(()=>{return !s.right})
+            
+        s.q(()=> setInstruction("Done"))
+        s.q(()=> wait(1000))
+        s.q(()=> {this.scene.resume('Study'); this.scene.stop()})
+        s.q(()=> wait(1))
+        s.q(()=> wait(1))
+
+        //SEQUENCE END
+
+
+
+        s.pushQueue()
+        this.sequence_list.push(s)
     }
 
+
+
+
+
     update(time, delta) {
-        this.s.play()
+        for(var sequence of this.sequence_list) {
+            sequence.play()
+        }
+
+        if(this.debug) {
+            this.debug_fps_text.setText(`
+                                        ${((1000/delta/3).toFixed()*3)}fps
+                                        ${((delta/3).toFixed()*3)}ms
+                                        Phase: ${this.debug_phase}
+                                        right=${this.sequence_list[0].right}`.replace(/ /g,''))
+        }
     }
 }
 
@@ -1149,16 +1299,6 @@ class Game extends Phaser.Scene {
         super('Game')
     }
 
-    log(msg) {
-        console.log(`${msg}`)
-    }
-
-    debug(msg) {
-        if(this.debug_mode) {
-            console.log(`DEBUG:${msg}`)
-        }
-    }
-    
     init(data) {
         this.debug_mode = true
         this.prev_time = 0
@@ -1180,17 +1320,7 @@ class Game extends Phaser.Scene {
     }
     
     preload() {
-        this.load.image('cyanEgg', 'assets/cyanEgg.png');
-        this.load.image('blueEgg', 'assets/blueEgg.png');
-        this.load.image('redEgg', 'assets/redEgg.png');
-        this.load.image('yellowEgg', 'assets/yellowEgg.png');
-        this.load.image('diamond', 'assets/diamond.png');
-        this.load.image('fail', 'assets/fail.png');
-        this.load.image('woods', 'assets/background.jpg');
-        this.load.image('safe', 'assets/safe.png');
-        this.load.image('white', 'assets/background_title.jpg');
-        this.load.audio('tap', ['assets/chisel.mp3'])
-        this.load.audio('diamond', ['assets/diamond.mp3'])
+
     }
 
     generateEggLocations() {
@@ -1213,33 +1343,29 @@ class Game extends Phaser.Scene {
     create(data) {
 
         this.score = 0
+        this.debug=true
 
         var safe_loc_x = general_config(1).width/2
         var safe_loc_y = general_config(1).height - 60
 
-        this.add.image(general_config(1).width/2,general_config(1).height/2, "woods")
+        this.add.image(width/2,height/2, "woods")
         this.add.image(safe_loc_x,safe_loc_y, "safe").setScale(0.2).setOrigin(0.5)
+
+        this.debug_fps_text = this.add.text(0,0, "Debug", { fontSize: '30px', fill: '#FFF  ', align: 'left' , fontFamily: "calibri"})
     
         this.scoreText = this.add.text(safe_loc_x, safe_loc_y, 'Depot: 0', { fontSize: '50px', fill: '#FFF', align: 'center' , fontFamily: "calibri"});
         this.scoreText.setOrigin(0.5)
-
-        this.speedText = this.add.text(general_config(1).width/2, 30, 'Speed: 1', { fontSize: '50px', fill: '#F33', align: 'center' , fontFamily: "calibri"});
-        this.speedText.setOrigin(0.5)
-        this.speedText.visible = false
-        
-        if(general_config(1).debug_mode) {
-            this.speedText.visible = true
-        }
 
         this.egg_manager = new ListManager(this.eggs_in_game, this.distractor_list)
 
         if(general_config(1).egg_locations_random) {
             this.location_manager = new ListManager(this.generateEggLocations())
         }else{
-            this.location_manager = new ListManager({x: general_config(1).width/8, y: general_config(1).height/4},
-                                                    {x: general_config(1).width/4, y: general_config(1).height/2},
-                                                    {x: general_config(1).width - general_config(1).width/4, y: general_config(1).height/2},
-                                                    {x: general_config(1).width - general_config(1).width/8, y: general_config(1).height/4})
+            this.location_manager = new ListManager([{x: 1465, y: 600},
+                                                    {x: 748, y: 788},
+                                                    {x: 685, y: 931},
+                                                    {x: 1178, y: 601},
+                                                    {x: 1254, y: 773}])
         }
 
         this.rythm_manager = new RythmManager(this)
@@ -1253,20 +1379,26 @@ class Game extends Phaser.Scene {
 
     }
 
+    calcScale(y) {
+        if(y==600) {y=y+200}
+        return ( 1.2* (((2/3) * height)-((height-y)/1.2)) / ((2/3) * height) )
+    }
+
 
     dropEgg() {
-        this.debug("game.dropEgg")
-        this.debug("-----------------------------------")
         var this_scene = this
 
         if(this.egg_manager.hasItems()) {
             var egg = this.egg_manager.getRandom()
             var loc = this.location_manager.getRandom()
-    
+
             var egg_obj = this.add.image(loc.x, loc.y, egg)
-            egg_obj.setScale(general_config(1).egg_size).setInteractive({ useHandCursor: true })
-    
-    
+            
+            egg_obj.setInteractive({ useHandCursor: true })
+            egg_obj.setOrigin(0.5,1) 
+            egg_obj.setScale(this.calcScale(loc.y))
+            this.add.image(width/2,height/2, "woods_layer")
+            
             //Disappear Timer
             var disappear_timer = this.time.addEvent({
                 delay: general_config(this.speed).egg_exist_duration,
@@ -1282,34 +1414,23 @@ class Game extends Phaser.Scene {
             game_data.push([participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"dropped"])
 
     
-            this.debug("-----------------------------------")
-        }else{
-            this.debug("no eggs in list, skipping round")
-            this.debug("-----------------------------------")
         }
     }
 
 
     removeEgg(egg_obj, complete=false, successful=false, rythm_obj=0) {
-        this.debug("game.removeEgg")
-        this.debug("-----------------------------------")
-        
         this.egg_manager.printStatusFull()
 
         var loc = {x:Math.floor(egg_obj.x), y:Math.floor(egg_obj.y)}
 
-        this.debug(`Object: ${egg_obj.texture.key} at ${loc}, complete: ${complete}, successful: ${successful}`)
-
         //How long the Location should stay unused, after egg is collected
         this.time.addEvent({delay: general_config(this.speed).location_cooldown_duration, callback: function() {
-            this.debug("location_manager.remove")
             this.location_manager.remove(loc)
         }, callbackScope: this});
 
         //How long the Egg should stay, after egg is collected
         this.time.addEvent({
             delay: general_config(this.speed).egg_stay_after_collect_duration, callback: function() {
-                this.debug("egg_manager.remove")
                 this.egg_manager.remove(egg_obj.texture.key, complete, successful)
             },callbackScope: this});
         
@@ -1340,14 +1461,9 @@ class Game extends Phaser.Scene {
         }
 
         if(rythm_obj != 0) {
-            this.log("Pushing Trial data")
             trial_data = [...trial_data, rythm_obj.input_rythm, rythm_obj.error]
         }
         game_data.push(trial_data)
-
-        this.speedText.setText(`Speed: ${this.speed}`)
-
-        this.debug("-----------------------------------")
 
     }
 
@@ -1362,7 +1478,9 @@ class Game extends Phaser.Scene {
         this.scoreText.setText(`Depot: ${this.score}`);
                 
         var dia_obj = this.add.image(egg_obj.x, egg_obj.y, "diamond")
-        dia_obj.setScale(0.2)
+        dia_obj.setScale(this.calcScale(egg_obj.y))
+        dia_obj.setOrigin(0.5,1.0)
+        this.add.image(width/2,height/2, "woods_layer")
 
         this.time.addEvent({delay: general_config(this.speed).diamond_exist_duration, callback: function() {dia_obj.destroy()}, callbackScope: this})
     }
@@ -1401,6 +1519,16 @@ class Game extends Phaser.Scene {
 
             },callbackScope: this});
         }
+
+        if(this.debug) {
+            this.debug_fps_text.setText(`
+                                        ${((1000/delta/3).toFixed()*3)}fps
+                                        ${((delta/3).toFixed()*3)}ms
+                                        x=${this.game.input.mousePointer.x}
+                                        y=${this.game.input.mousePointer.y}`.replace(/ /g,''))
+        }
+
+
     }
 }
     
@@ -1496,7 +1624,7 @@ class Test extends Phaser.Scene {
 const config = {
     type: Phaser.AUTO,
     backgroundColor: "#FFF",
-    scene: [Training],//[Study, Training, Game],
+    scene: [Study, Training, Game],
 
     scale: {
         parent: 'viewport',
