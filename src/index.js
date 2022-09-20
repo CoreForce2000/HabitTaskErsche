@@ -1028,7 +1028,7 @@ class Study extends Phaser.Scene {
         s.q(()=> {
             console.log("Running Trial 1")
             this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"yellowEgg":[2,1,1], "redEgg":[1,1,2]}})
+            this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"yellowEgg":[1,2,1,1], "redEgg":[2,2,1,1]}})
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
@@ -1037,7 +1037,7 @@ class Study extends Phaser.Scene {
         s.q(()=> {
             console.log("Running Trial 2")
             this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"blueEgg":[1,2,1], "cyanEgg":[2,1,2]}})
+            this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"blueEgg":[1,2,1,2], "cyanEgg":[1,1,1,2]}})
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
@@ -1046,7 +1046,7 @@ class Study extends Phaser.Scene {
         s.q(()=> {
             console.log("Running Trial 3")
             this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 5, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[2,1,2]}})
+            this.scene.launch('Training', { successive_correct_required: 5, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}})
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
@@ -1059,7 +1059,7 @@ class Study extends Phaser.Scene {
 
         s.q(()=> {
             this.main_text.setText('Loading Task...')
-            this.scene.launch('Game', { phase_id: 1, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["cyanEgg"]})
+            this.scene.launch('Game', { phase_id: 1, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}, distractor_list: ["cyanEgg"]})
             this.scene.pause()})
         s.q(()=> s.timer.waitClickOrKey())
 
