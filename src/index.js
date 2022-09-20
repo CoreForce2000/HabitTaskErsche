@@ -280,6 +280,8 @@ function exportToCsv(columns, data) {
 
 }
 
+
+
 function shuffle(arr) {
 	return arr.sort(() => Math.random() - 0.5)
 }
@@ -509,11 +511,14 @@ export class RythmManager {
             }
         });
 
-        this.scope.input.on('pointerdown', function() {
+        /*this.scope.input.on('pointerdown', function() {
             if(this_this.currently_hovering != 0) {
-                this_this.click(this_this.currently_hovering)
+                
             }
-        });
+        });*/
+
+
+
     }
 
     log(msg) {
@@ -552,6 +557,12 @@ export class RythmManager {
         rythm_object.image.on('pointerout',function() {
             this_this.log("Hovering no more")
             this_this.hoverOver(0)
+        })
+
+        rythm_object.image.on('pointerdown',function() {
+            this_this.log("Hovering")
+            this_this.hoverOver(rythm_object)
+            this_this.click(this_this.currently_hovering)
         })
 
         if(pre_activate) {
@@ -796,7 +807,6 @@ class SequenceTimer {
             }
         })
     }
-
 }
 
 
@@ -831,8 +841,10 @@ class Sequence {
         }
     }
 
-    q(func) {
-        this.pending_sequence.push(func)
+    q(func, active=true) {
+        if(active) {
+            this.pending_sequence.push(func)
+        }
     }
 
     r(func) {
@@ -1025,32 +1037,35 @@ class Study extends Phaser.Scene {
         s.q(()=> this.main_text.setText(slide_text.practice1))
         s.q(()=> s.timer.waitClickOrKey())
 
+        /*
         s.q(()=> {
             console.log("Running Trial 1")
             this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"yellowEgg":[1,2,1,1], "redEgg":[2,2,1,1]}})
+            this.scene.launch('Training', { successive_correct_required: 0, rythm_list: {"yellowEgg":[1,2,1,1], "redEgg":[2,2,1,1]}})
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        s.q(()=> s.timer.waitClickOrKey())
+        //s.q(()=> s.timer.waitClickOrKey())
 
         s.q(()=> {
             console.log("Running Trial 2")
             this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 2, rythm_list: {"blueEgg":[1,2,1,2], "cyanEgg":[1,1,1,2]}})
+            this.scene.launch('Training', { successive_correct_required: 0, rythm_list: {"blueEgg":[1,2,1,2], "cyanEgg":[1,1,1,2]}})
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        s.q(()=> s.timer.waitClickOrKey())
+        //s.q(()=> s.timer.waitClickOrKey())
 
         s.q(()=> {
             console.log("Running Trial 3")
             this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 5, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}})
+            this.scene.launch('Training', { successive_correct_required: 0, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}})
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        s.q(()=> s.timer.waitClickOrKey())
+        //s.q(()=> s.timer.waitClickOrKey())
+
+*/
 
         s.q(()=> this.main_text.setText(slide_text.phase1_p1))
         s.q(()=> s.timer.waitClickOrKey())
