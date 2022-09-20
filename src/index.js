@@ -1037,7 +1037,6 @@ class Study extends Phaser.Scene {
         s.q(()=> this.main_text.setText(slide_text.practice1))
         s.q(()=> s.timer.waitClickOrKey())
 
-        /*
         s.q(()=> {
             console.log("Running Trial 1")
             this.main_text.setText('')
@@ -1045,7 +1044,7 @@ class Study extends Phaser.Scene {
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        //s.q(()=> s.timer.waitClickOrKey())
+        s.q(()=> s.timer.waitClickOrKey())
 
         s.q(()=> {
             console.log("Running Trial 2")
@@ -1054,7 +1053,7 @@ class Study extends Phaser.Scene {
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        //s.q(()=> s.timer.waitClickOrKey())
+        s.q(()=> s.timer.waitClickOrKey())
 
         s.q(()=> {
             console.log("Running Trial 3")
@@ -1063,9 +1062,9 @@ class Study extends Phaser.Scene {
             this.scene.pause()})
 
         s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        //s.q(()=> s.timer.waitClickOrKey())
+        s.q(()=> s.timer.waitClickOrKey())
 
-*/
+
 
         s.q(()=> this.main_text.setText(slide_text.phase1_p1))
         s.q(()=> s.timer.waitClickOrKey())
