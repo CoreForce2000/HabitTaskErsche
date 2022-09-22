@@ -35,12 +35,12 @@ function general_config(speed) {
 
         //Ingame: Phase Parameters
 
-        egg_drop_frequency: 3000 + (Math.random() * 2000), //
-        egg_exist_duration: 2000 + (Math.random() * 1500), //
+        egg_drop_frequency: 4000 + (Math.random() * 1000), //
+        egg_exist_duration: 3000 + (Math.random() * 2000), //
         egg_stay_after_collect_duration: 0 ,
 
-        diamond_exist_duration: 1500 ,
-        location_cooldown_duration: 2500 ,
+        diamond_exist_duration: 1500,
+        location_cooldown_duration: 2500,
 
         //Rythm Error Margin
 
@@ -68,137 +68,6 @@ function general_config(speed) {
 
 
 var game_data_columns = ["participant_id", "trial_id", "phase", "ts", "egg", "x","y","event", "input_rythm_1","input_rythm_2","input_rythm_3", "error"]
-
-
-
-var slide_text = {
-
-    welcome: `Welcome. Please press F11 to enter fullscreen mode.
-Please ensure your sound is turned on.
-    
-Press SPACE to continue`,
-
-    introduction:`In this task, you are in the woods collecting diamonds,
-which are hidden away in eggs of different color and pattern.
-In order to retrieve a diamond, you need to use
-a certain tapping rythm on an egg. If the rythm is correct,
-the egg will open and a diamond will be added to your depot.
-If the rythm is incorrect however, the egg will disappear and
-no diamond will be added to your depot.`,
-
-    practice1:`First you will learn the different rythms that 
-may be used to open an egg and collect a diamond.
-In each round,a rythm is played, followed by a promt.
-You'll then need to replicate the rythm you just heard
-using your mouse to hover over the image of an R-Key, and the
-actual R-key on your keyboard button to tap the rythm.
-Alternatively to the R-key, you can also use your mouse left click to 
-click the rythm.
-The practise round will end once you have mastered all the rythms
-
-When you are ready, press SPACE to begin training`,
-
-    phase1_p1:`Now that you have learned all the rythms, we can begin
-the egg hunt.
-
-Press SPACE to continue to the next slide`,
-
-    phase1_p2:`You are on an egg hunt to collect diamonds
-that are hidden in eggs. To open an egg, you have to 
-hover over it and tap or click one of the previously 
-learned rythms. You need to find out by trial and error 
-which rhythm is associated with which egg. 
-Some eggs might not have any associated rythm.
-If you are correct, your will see a diamond and your 
-score will increase, however if you are incorrect,
-nothing will happen. Your goal is to collect as many diamonds as possible.
-
-When you are ready, press SPACE to begin`,
-
-    phase2_p1:`Thank you for your participation, you have successfully
-Phase 1 of the study. We will now proceed to Phase 2.
-    
-Press SPACE to continue to the next slide`,
-
-    phase2_p2:`Again, eggs
-will appear on the screen and need to be collected by hovering
-over the desired egg and tapping or clicking the associated rythm.
-However, some eggs that previously contained a diamond might now
-be empty. As previously, your goal is to collect as many diamonds as possible.
-
-When you are ready, press SPACE to begin`,
-
-    practice_2_and_phase_3_p1:`You have successfully completed Phase 2.
-    
-Press SPACE to continue to the next slide`,
-
-    practice_2_and_phase_3_p2:`You will now complete another practise round,
-followed by an egg collection phase.
-You will be asked to replicate the old rythms along with some new ones. 
-As in the previous training round, you will first hear the rythm, 
-then be promted to replicate it using your keyboard or mouse.
-
-Press SPACE to continue to the next slide`,
-
-    practice_2_and_phase_3_p3:`In the egg collection phase, your goal is
-as in previous trials to collect as many eggs as possible
-by hovering over a desired egg and tapping the appropriate
-rythm. However, some of the previously empty eggs might now
-contain a diamond, and some eggs may now have different rythms
-necessary to collect the diamond.
-
-Press SPACE to continue to the next slide`,
-
-    practice_2_and_phase_3_p4:`Again, you need to use trial and error
-to discover which eggs contain a diamond, and what
-rythm will open the egg to reveal a diamond.
-When you press SPACE, you will begin the training round.
-
-When you are ready, press SPACE to begin`,
-
-    phase_3:`You will now begin the egg collection phase.
-Remember, some of the previously empty eggs might now
-contain a diamond, and some eggs may now have different rythms
-associated to collect the diamond.
-
-When you are ready, press SPACE to begin`,
-
-    phase4:`Thank you for your engagement so far.
-We will now initiate the fourth and final round of 
-egg collection in this study. As before, please collect
-as many eggs as possible using the correct rythm.
-Some of the eggs that previously contained a diamond however
-may now be empty. Please collect as many diamonds as possbile.
-
-When you are ready, press SPACE to begin`,
-
-    finish:`Thank you for participating!
-Please inform the researcher for further instructions.
-
-Press F11 to exit fullscreen`,
-
-
-
-    // Other
-
-    train_await_rythm: `Please replicate the rythm you have just heard
-in any speed you like, by hovering over the image of an R-key on screen
-and pressing the actualy R-key on your keyboard or clicking the mouse button 
-once for every "tap" in that rythm`
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -732,81 +601,11 @@ class SequenceTimer {
     }
 
 
-    startTimer = () => {this.timer = Date.now()}
-    endTimer = () => {return Date.now()-this.timer }
-
-    wait = (delay) => {
-        this.s.stepBack()
-        var wait_delay=delay
-        this.scene.time.addEvent({delay: wait_delay, callback: () => {this.s.step()}, callbackScope: this})
-    }
-
-    waitClickOrKey = (key="SPACE") => {
-        this.s.stepBack()
-        var key_listener;
-        var click_listener;
-        
-        var whenInput = () => {
-            this.s.step()
-            this.scene.input.keyboard.removeKey(key); key_listener.removeListener("down"); key_listener=0
-            click_listener.removeListener("pointerdown"); click_listener=0
-        }
-        key_listener = this.scene.input.keyboard.addKey(key).on('down', whenInput);
-        click_listener = this.scene.input.on("pointerdown", whenInput)
-    }
-
-    waitClick = () => {
-        this.s.stepBack()
-
-        var click_listener = this.scene.input.on("pointerdown", () => {
-            this.s.step()
-            click_listener.removeListener("pointerdown");
-        })
-    }
-
-    waitKey = (key="SPACE") => {
-        this.s.stepBack()
-
-        var key_listener = this.scene.input.keyboard.addKey(key).on('down', () => {
-            this.s.step()
-            this.scene.input.keyboard.removeKey(key) 
-            key_listener.removeListener("down")
-        });
-    }
 
     playBeat = (sound) => {this.scene.sound.play(sound); this.scene.sound.context.resume()}
     visualBeat = (image) => {image.setAlpha(1);this.scene.time.addEvent({ delay: 100, callback: () => {image.setAlpha(0.5)}, callbackScope: this})}
 
 
-    q_playRythm = (getRythm, getImage) => {
-        this.s.q(()=> {this.playBeat("tap"); this.visualBeat(getImage())})
-        this.s.loop()
-            this.s.q(()=> this.wait(getRythm()[this.s.getCounter()]*300))
-            this.s.q(()=> {this.playBeat("tap"); this.visualBeat(getImage())})
-        this.s.while(()=>{return (this.s.getCounter() < getRythm().length)})
-    }
-
-    q_waitRythm = (getRythm, funcCorr, funcParcorr, funcIncorr) => {
-        this.s.q(()=> {this.input_rythm = []})
-        this.s.q(()=> this.waitClickOrKey())
-        this.s.q(()=> {this.playBeat("tap")})
-        this.s.loop()
-            this.s.q(()=> this.startTimer())
-            this.s.q(()=> this.waitClickOrKey())
-            this.s.q(()=> this.input_rythm.push(this.endTimer()))
-            this.s.q(()=> {this.playBeat("tap")})
-        this.s.while(()=>{return (this.s.getCounter() < getRythm().length)})
-        this.s.q(() => this.rythm_accuracy = rythmsMatch(this.input_rythm, getRythm()))
-        this.s.q(() => {
-            if((this.rythm_accuracy < 0.3)) {
-                funcCorr()
-            }else if(this.rythm_accuracy >= 0.45) {
-                funcIncorr()
-            }else {
-                funcParcorr()
-            }
-        })
-    }
 }
 
 
@@ -818,33 +617,39 @@ class Sequence {
         this.scene = scene
         this.timer = new SequenceTimer(scene, this)
 
-        this.pending_sequence = []
+        this.v = {}
+
+        this.pendingSequence = []
         this.sequence = []
 
         this.checkpoint = {}
-        this.loop_counter = []
+        this.loopCounter = []
 
-        this.prev_step = -1
-        this.curr_step = 0
+        this.prevStep = -1
+        this.currStep = 0
     }
 
     play() {
-        if(this.sequence.length-1 > this.curr_step) {
-            while(this.curr_step != this.prev_step) {
-                this.prev_step = this.curr_step
+        if(this.sequence.length-1 > this.currStep) {
+            while((this.currStep != this.prevStep) & !this.pass) {
+                this.prevStep = this.currStep
 
-                console.log("Step", this.curr_step)
-                this.sequence[this.curr_step]()
-                this.curr_step++
-                
+                console.log("Step", this.currStep)
+                this.sequence[this.currStep]()
+                this.currStep++
             }
+            this.pass = false
         }
     }
 
     q(func, active=true) {
         if(active) {
-            this.pending_sequence.push(func)
+            this.sequence.push(func)
         }
+    }
+
+    qList(funcList) {
+        this.sequence = [...this.sequence, ...funcList]
     }
 
     r(func) {
@@ -855,25 +660,26 @@ class Sequence {
         this.q(()=> console.log(text))
     }
 
+    /*
     pushQueue() {
         this.sequence = [...this.sequence, ...this.pending_sequence]
-    }
+    }*/
 
     step() {
-        this.curr_step++
+        this.currStep++
     }
 
     stepBack() {
-        this.curr_step--
+        this.currStep--
     }
 
     setCheckpoint(name) {
-        this.checkpoint[name] = this.curr_step
+        this.checkpoint[name] = this.currStep
     }
 
     goCheckpoint(name) {
-        this.curr_step = this.checkpoint[name]
-        this.prev_step = this.curr_step-1
+        this.currStep = this.checkpoint[name]
+        this.prevStep = this.currStep-1
     }
 
     checkpoint(name) {
@@ -885,31 +691,89 @@ class Sequence {
     }
 
     loop() {
-        this.q(()=> {
-            console.log("LOOP")
-            this.loop_counter.push(0)
-            this.loop_counter[this.loop_counter.length-1]=0
-            this.setCheckpoint(this.loop_counter.length-1)
-        })
+        this.loopCounter.push(0)
+        this.loopCounter[this.loopCounter.length-1]=0
+        this.setCheckpoint(this.loopCounter.length-1)
     }
 
     getCounter() {
-        return this.loop_counter[this.loop_counter.length-1]
+        return this.loopCounter[this.loopCounter.length-1]
     }
 
     while(func) {
-        this.q(()=> {
-            this.loop_counter[this.loop_counter.length-1]++
-            if(func()) {
-                console.log("ITERATE")
-                this.goCheckpoint(this.loop_counter.length-1);
+        this.loopCounter[this.loopCounter.length-1]++
+        if(func()) {
+            console.log("ITERATE")
+            this.goCheckpoint(this.loopCounter.length-1);
                 
-            }else{
-                console.log("END LOOP")
-                this.loop_counter.pop()
-            }
+        }else{
+            console.log("END LOOP")
+            this.loopCounter.pop()
+        }
+    }
+
+    hold() {
+        this.pass = true
+    }
+
+
+    startTimer = () => {this.timer = Date.now()}
+    endTimer = () => {return Date.now()-this.timer }
+
+    wait = (delay) => {
+        this.stepBack()
+        var waitDelay = delay
+        this.scene.time.addEvent({delay: waitDelay, callback: () => {this.step()}, callbackScope: this})
+    }
+
+    waitClickOrKey = (key="SPACE") => {
+        this.stepBack()
+        var keyListener;
+        var clickListener;
+        
+        var whenInput = () => {
+            this.step()
+            this.scene.input.keyboard.removeKey(key); keyListener.removeListener("down"); keyListener=0
+            clickListener.removeListener("pointerdown"); clickListener=0
+        }
+        keyListener = this.scene.input.keyboard.addKey(key).on('down', whenInput);
+        clickListener = this.scene.input.on("pointerdown", whenInput)
+    }
+
+    waitClick = () => {
+        this.stepBack()
+
+        var clickListener = this.scene.input.on("pointerdown", () => {
+            this.step()
+            clickListener.removeListener("pointerdown");
         })
     }
+
+
+    waitClickButton = (button) => {
+        this.stepBack()
+
+        var scope = this
+
+        var clickListener = button.on('pointerdown',function() {
+            console.log("Next button clicked!")
+            scope.step()
+            clickListener.removeListener("pointerdown");
+        })
+
+    }
+
+
+    waitKey = (key="SPACE") => {
+        this.stepBack()
+
+        var keyListener = this.scene.input.keyboard.addKey(key).on('down', () => {
+            this.step()
+            this.scene.input.keyboard.removeKey(key) 
+            keyListener.removeListener("down")
+        });
+    }
+
 }
 
 
@@ -949,8 +813,8 @@ class Sequence {
 
 
 
-var participant_id = 0
-var trial_id = 0
+var participantId = 0
+var trialId = 0
 
 class Study extends Phaser.Scene {
     constructor() {
@@ -974,153 +838,425 @@ class Study extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('whitescreen', 'assets/background_title.jpg');
-        this.load.image('r_key', 'assets/r_key.png');
-        this.load.audio('tap', ['assets/chisel.mp3'])
 
-        this.load.image('cyanEgg', 'assets/eggCyanShadow.png');
-        this.load.image('blueEgg', 'assets/eggBlueShadow.png');
-        this.load.image('redEgg', 'assets/eggRedShadow.png');
-        this.load.image('yellowEgg', 'assets/eggYellowShadow.png');
-        this.load.image('diamond', 'assets/diamondShadow.png');
-        this.load.image('fail', 'assets/fail.png');
-        this.load.image('woods', 'assets/background_medium.jpg');
-        this.load.image('woods_layer', 'assets/background_layer.png');
-        this.load.image('safe', 'assets/safe.png');
-        this.load.image('white', 'assets/background_title.jpg');
-        this.load.audio('tap', ['assets/chisel.mp3'])
-        this.load.audio('diamond', ['assets/diamond.mp3'])
+        //Slides
+        this.load.image('slideWhite', 'assets/slides/white.png');
+
+        this.load.image('slide1', 'assets/slides/Slide1.PNG');
+        this.load.image('slide10', 'assets/slides/Slide10.PNG');
+        this.load.image('slide2', 'assets/slides/Slide2.PNG');
+        this.load.image('slide3', 'assets/slides/Slide3.PNG');
+        this.load.image('slide8', 'assets/slides/Slide8.PNG');
+        this.load.image('slide9', 'assets/slides/Slide9.PNG');
+        this.load.image('slideCorrect', 'assets/slides/SlideCorrect.PNG');
+        this.load.image('slideIncorrect', 'assets/slides/SlideIncorrect.PNG');
+        this.load.image('slideLearn', 'assets/slides/SlideLearn.PNG');
+        this.load.image('slideReproduce', 'assets/slides/SlideReproduce.PNG');
+        this.load.image('slideRetry', 'assets/slides/SlideRetry.PNG');
+
+        this.load.image('nextButton', 'assets/slides/next_button.png');
+        this.load.image('rythmDot', 'assets/slides/rythm_dot.png');
+
+        //Game Objects
+        this.load.image('cyanEgg', 'assets/game/eggCyanShadow.png');
+        this.load.image('blueEgg', 'assets/game/eggBlueShadow.png');
+        this.load.image('redEgg', 'assets/game/eggRedShadow.png');
+        this.load.image('yellowEgg', 'assets/game/eggYellowShadow.png');
+
+        this.load.image('cyanEggShell', 'assets/game/eggShellCyan.png');
+        this.load.image('blueEggShell', 'assets/game/eggShellBlue.png');
+        this.load.image('redEggShell', 'assets/game/eggShellRed.png');
+        this.load.image('yellowEggShell', 'assets/game/eggShellYellow.png');
+
+        this.load.image('diamond', 'assets/game/diamondShadow.png');
+
+        this.load.image('woods', 'assets/game/background_medium.jpg');
+        this.load.image('woods_layer', 'assets/game/background_layer.png');
+
+        this.load.image('safe', 'assets/game/safe.png');
+        this.load.image('white', 'assets/game/background_title.jpg');
+
+        this.load.audio('tap', ['assets/sounds/chisel.mp3'])
+        this.load.audio('diamond', ['assets/sounds/diamond.mp3'])
+
+        
     }
 
     create(data) {
 
         var s = new Sequence(this)
 
+        const EGG_RYTHM_DICT = {"blueEgg":[1,2,1], "redEgg":[1,1,2], "yellowEgg":[2,1,1]}
+
         let element = document.getElementById('input-box')
-        element.style.display = 'none';
+        //element.style.display = 'none';
 
-        this.add.image(general_config(1).width/2, general_config(1).height/2, "white").setOrigin(0.5);
+        this.slide = this.add.image(0.5* width, 0.5* height, "slideWhite").setOrigin(0.5,0.5).setScale(1.5);
 
-        this.main_text = this.add.text(general_config(1).width/2, general_config(1).height/2, '', { fontSize: '40px', fill: '#000', align: 'center', fontFamily: "calibri"});
-        this.main_text.setOrigin(0.5)
-        this.debug_text = this.add.text(general_config(1).width/2, general_config(1).height - (general_config(1).height/8), '', { fontSize: '35px', fill: '#C00', align: 'center', fontFamily: "calibri"});
-        this.debug_text.setOrigin(0.5)
+        this.egg = this.add.image(0.5* width, 0.48* height , "slideWhite").setOrigin(0.5,0.5).setAlpha(0)
+        this.egg.setInteractive({ useHandCursor: true })
 
-        /*
-        s.q(()=>{
-            s.stepBack()
-            for (let i = 0; i < element.children.length; i++) {
-                      
-            // it is an input element
-            if(element.children[i].name == 'id'){
-                element.children[i].addEventListener('input',()=>{participant_id = element.children[i].value})
+        this.nextButton = this.add.image(width*0.8, height*0.93, "nextButton").setOrigin(0.5,0.5).setScale(1.5).setAlpha(0);
+        this.nextButton.setInteractive({ useHandCursor: true })
+
+
+        //this.main_text = this.add.text(width/2, height/2, '', { fontSize: '40px', fill: '#000', align: 'center', fontFamily: "calibri"});
+        //this.main_text.setOrigin(0.5)
+        this.debugText = this.add.text(width/2, height/2 - (height/8), '', { fontSize: '35px', fill: '#C00', align: 'center', fontFamily: "calibri"});
+        this.debugText.setOrigin(0.5)
+
+
+        var makeRythmDots = (getRythm)=> {
+            return []
+        }
+
+
+        var resultScreen = (egg, correct)=> {
+            if(s.var[correct]) {
+                return [
+
+                    ()=>this.slide.setTexture("slide5"),
+                    ()=>this.egg.setTexture("diamond"),
+    
+                ]
+            }else{
+                return [
+
+                    ()=>this.slide.setTexture("slide6"),
+                    ()=>this.egg.setTexture(`${s.var[egg]}Shell`),
+    
+                ]
             }
-
-            // it is an input element
-            if(element.children[i].name == 'trial'){
-                element.children[i].addEventListener('input',()=>{trial_id = element.children[i].value})
-            }
-                
-            // it is the button
-            else {
-                console.log("Init This")
-                var this_scene = this
-                element.children[i].addEventListener('click',()=>{element.style.display = 'none';  s.step()})
-                }
-            } 
-        })*/
-
-        s.q(()=> this.main_text.setText(slide_text.welcome))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.introduction))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.practice1))
-        s.q(()=> s.timer.waitClickOrKey())
-
-        s.q(()=> {
-            console.log("Running Trial 1")
-            this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 0, rythm_list: {"yellowEgg":[1,2,1,1], "redEgg":[2,2,1,1]}})
-            this.scene.pause()})
-
-        s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        s.q(()=> s.timer.waitClickOrKey())
-
-        s.q(()=> {
-            console.log("Running Trial 2")
-            this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 0, rythm_list: {"blueEgg":[1,2,1,2], "cyanEgg":[1,1,1,2]}})
-            this.scene.pause()})
-
-        s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        s.q(()=> s.timer.waitClickOrKey())
-
-        s.q(()=> {
-            console.log("Running Trial 3")
-            this.main_text.setText('')
-            this.scene.launch('Training', { successive_correct_required: 0, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}})
-            this.scene.pause()})
-
-        s.q(()=> this.main_text.setText("Please press SPACE to Continue"))
-        s.q(()=> s.timer.waitClickOrKey())
+        }
 
 
 
-        s.q(()=> this.main_text.setText(slide_text.phase1_p1))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.phase1_p2))
-        s.q(()=> s.timer.waitClickOrKey())
+        var eggIntroductionScreen = (egg, rythm)=> {
+            return [
 
-        s.q(()=> {
-            this.main_text.setText('Loading Task...')
-            this.scene.launch('Game', { phase_id: 1, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}, distractor_list: ["cyanEgg"]})
-            this.scene.pause()})
-        s.q(()=> s.timer.waitClickOrKey())
+                ()=>this.slide.setTexture("slideLearn"),
+                ()=>this.egg.setTexture(s.var[egg]).setAlpha(1),
+                ()=>this.nextButton.setTexture(s.var[egg]).setAlpha(1),
 
-        s.q(()=> this.main_text.setText(slide_text.phase2_p1))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.phase2_p2))
-        s.q(()=> s.timer.waitClickOrKey())
+            ]
+        }
 
-        s.q(()=> {
-            this.main_text.setText('Loading Task...')
-            this.scene.launch('Game', { phase_id: 2, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
-            this.scene.pause()})
-        s.q(()=> s.timer.waitClickOrKey())
+        //visualBeat = (image) => {image.setAlpha(1);this.scene.time.addEvent({ delay: 100, callback: () => {image.setAlpha(0.5)}, callbackScope: this})}
+    
 
-        s.q(()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p1))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p2))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p3))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p4))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> this.main_text.setText("Note: Insert Training Yes/No?"))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> {this.main_text.setText(slide_text.phase_3)})
-        s.q(()=> s.timer.waitClickOrKey())
 
-        s.q(()=> {
-            this.main_text.setText('Loading Task...')
-            this.scene.launch('Game', { phase_id: 3, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
-            this.scene.pause()})
-        s.q(()=> s.timer.waitClickOrKey())
+        var waitRythm = (rythm, func) => {
+            return [
+                ()=> s.var.userRythm = [],
+                ()=> s.timer.waitClickOrKey(),
+                ()=> this.sound.play("tap"),
+                ()=> s.loop(),
+                    ()=> s.timer.startTimer(),
+                    ()=> s.timer.waitClickOrKey(),
+                    ()=> s.var.userRythm.push(s.timer.endTimer()),
+                    ()=> this.sound.play("tap"),
+                ()=> s.while(()=>{return (s.getCounter() < s.var[rythm].length)}),
+                ()=> func(rythmsMatch(s.var.userRythm, s.var[rythm]))
+            ]
+        }
 
-        s.q(()=> this.main_text.setText(slide_text.phase4))
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> {
-            this.main_text.setText('Loading Task...')
-            this.scene.launch('Game', { phase_id: 4, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
-            this.scene.pause()})
 
-        s.q(()=> s.timer.waitClickOrKey())
-        s.q(()=> {
-            this.main_text.setText(slide_text.finish)
-            exportToCsv(game_data_columns, game_data)})
-        s.q(()=> s.timer.waitClickOrKey())
+        var playRythm = (rythm, image) => {
+            return [
+                ()=> this.playBeat("tap"),
+                ()=> this.visualBeat(this.s.var[image]),
+                ()=> this.s.loop(),
+                ()=> this.wait(this.s.var[rythm][this.s.getCounter()]*300),
+                ()=> this.playBeat("tap"),
+                ()=> this.visualBeat(this.s.var[image]),
+                ()=> this.s.while(()=>{return (this.s.getCounter() < this.s.var[rythm].length)})
+            ]
+        }
 
-        s.pushQueue()
+
+        s.qList([
+
+            ()=>{
+                s.stepBack()
+                for (let i = 0; i < element.children.length; i++) {
+                          
+                    // it is an input element
+                    if(element.children[i].name == 'id'){
+                        element.children[i].addEventListener('input',()=>{participantId = element.children[i].value})
+                    }
+        
+                    // it is an input element
+                    if(element.children[i].name == 'trial'){
+                        element.children[i].addEventListener('input',()=>{trialId = element.children[i].value})
+                    }
+                        
+                    // it is the button
+                    else {
+                        console.log("Init This")
+                        element.children[i].addEventListener('click',()=>{element.style.display = 'none';  s.step()})
+                        }
+                    } 
+                },
+
+
+            ()=> this.slide.setTexture("slide1"),
+            ()=> s.timer.wait(1000),
+            ()=> this.slide.setTexture("slide2"),
+            ()=> this.nextButton.setAlpha(1),
+            ()=> s.timer.waitClickButton(this.nextButton),
+            ()=> this.slide.setTexture("slide3"),
+            ()=> s.timer.waitClickButton(this.nextButton),
+
+
+            //Training Phase
+
+            ()=> s.var.em = new ListManager(Object.keys(EGG_RYTHM_DICT)),
+
+            ()=> s.loop(),
+                ()=> s.var.egg = s.var.em.getRandom(),
+                ()=> s.var.rythm = EGG_RYTHM_DICT[s.var.egg],
+
+                ()=> this.slide.setTexture("slideLearn"),
+                ()=> this.egg.setTexture(s.var.egg),
+
+                ...playRythm("rythm", "egg"),
+
+                ()=> s.timer.wait(2000),
+
+                ()=> s.var.em.remove(s.var.em, true, true),
+
+                ...waitRythm("rythm", (rythmAccuracy)=>{s.var.rythmCorrect = (rythmAccuracy<0.3)}),
+
+                ...resultScreen("egg", "rythmAccuracy"),
+
+                ()=> s.timer.wait(2000),
+
+
+
+            ()=> s.while(()=> {return !s.var.em.isDone()}),
+
+            ()=> console.warn("Made it to the end!"),
+
+            ()=> s.timer.waitClickButton(this.nextButton),
+
+
+
+
+
+
+
+
+
+
+            ()=> {
+                this.slide.setTexture("slide_white"),
+                this.scene.launch('Training', { successive_correct_required: 3, grace_trials: 0, rythm_list: {"blueEgg":[1,1,0,1,0,1,1,0,1], "redEgg":[1,0,1,0,1,1,1], "yellowEgg":[1,1,0,1,1,1,]}})
+                this.scene.pause()},
+
+            ()=> s.hold(),
+
+
+
+
+                ()=> this.sound.context.resume(),
+                ()=> s.loop(),
+                    ()=> clearInstruction(),
+                    ()=> s.em = resetEggs(),
+                    ()=> s.timer.wait(1000),
+    
+                    ()=> s.loop(),
+                        ()=> s.var["image"] = this.makeEgg(width/2, height/2, s.em.getRandom(), true, 1, 0.5),
+                        ()=> s.var["rythm"] = this.rythm_list[s.var["image"].texture.key],
+    
+                        ()=> s.loop(),
+                            ()=> clearInstruction(),
+                            ()=> s.var["image"].setOrigin(0.5,0.5),
+                            ()=> s.var["image"].setAlpha(0.5),
+                            ()=> s.timer.wait(1000),
+                            ...s.timer.q_playRythm("rythm", "image"),
+                            ()=> s.timer.wait(1000),
+                            ()=> s.var["image"].setOrigin(0.5,-0.5),
+                            ()=> s.var["image"].setAlpha(1),
+                            ()=> setInstruction("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg"),
+                            ...s.timer.q_waitRythm("rythm", (rythm_accuracy)=>{
+                                    if(rythm_accuracy < 0.3) {
+                                        setInstruction("Correct!"); s.var["rythm_correct"]=true
+                                    }else if(rythm_accuracy >= 0.45) {
+                                        setInstruction("Almost! Try Again"); s.var["rythm_correct"]=false
+                                    }else {
+                                        setInstruction("Incorrect :/ Please try again"); s.var["rythm_correct"]=false
+                                    }
+                                }),
+                            
+                            ()=> s.timer.wait(1000),
+                        ()=> s.while(()=>{return !s.var["rythm_correct"]}),
+    
+                        ()=> s.var["image"].destroy(),
+                        ()=> clearInstruction(),
+                    ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
+    
+    
+    
+                    ()=> s.setCheckpoint("RetryTest"),
+                            
+                    ()=> s.loop(),
+                        ()=> this.debug_phase = s.getCounter()+1,
+                        ()=> s.var["happy_path"] = true,
+                        ()=> s.em = resetEggs(),
+                        ()=> setInstruction(`Trial ${s.getCounter()+1}/${this.successive_correct_required}`),
+                        ()=> s.timer.wait(1000),
+    
+                        ()=> s.loop(),
+                            ()=> {s.timer.wait(500)},
+                            ()=> s.var["image"] = this.makeEgg(width/2, height/2, s.em.getRandom(), true, 1, 0.5),
+                            ()=> s.var["image"].setOrigin(0.5,-0.5),
+                            ()=> s.var["rythm"] = this.rythm_list[s.var["image"].texture.key],
+                                        
+                            ()=> s.loop(),
+                                ()=> setInstruction("Please tap the rythm that was associated with this egg"),
+                                ()=> s.var["image"].setAlpha(1),
+                                ...s.timer.q_waitRythm("rythm", (rythm_accuracy)=>{
+                                    if(rythm_accuracy < 0.3) {
+                                        setInstruction("Correct!"); s.var["rythm_correct"]=true;
+                                    }else if(rythm_accuracy >= 0.45) {
+                                        setInstruction("Almost!"); s.var["rythm_correct"]=false; 
+                                    }else {
+                                        setInstruction("Incorrect"); s.var["rythm_correct"]=false;
+                                    }
+                                }),
+    
+                                ()=> s.timer.wait(1000),
+                                ()=> {if(!s.var["rythm_correct"] & (s.getCounter() < this.grace_trials)) {setInstruction("Try again"); s.timer.wait(1000)}},
+                                ()=> {if(!s.var["rythm_correct"] & (s.getCounter() >= this.grace_trials)) {s.var["happy_path"]=false} },
+                                ()=> clearInstruction(),
+                            ()=> s.while(()=> {return (!s.var["rythm_correct"] & (s.getCounter() < (this.grace_trials+1)))}),
+    
+                            ()=> s.var["image"].destroy(),
+                            ()=> s.timer.wait(500),
+                            ()=> clearInstruction(),
+                        ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
+                    ()=> s.while(()=>{return ((s.getCounter() < this.successive_correct_required) & s.var["happy_path"])}), //Number of Trials
+                ()=> s.while(()=>{return !s.var["happy_path"]}),
+            
+            ()=> setInstruction(""),
+            ()=> s.timer.wait(1000),
+            ()=> {this.scene.resume('Study'); this.scene.stop()},
+            ()=> s.timer.wait(1),
+            ()=> s.timer.wait(1),
+
+
+
+
+
+
+
+            ()=> this.slide.setTexture("slide_3"),
+
+
+            ()=> {
+                this.slide.setTexture("slide_white"),
+                this.scene.launch('Training', { successive_correct_required: 3, grace_trials: 0, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1]}})
+                this.scene.pause()},
+
+            ()=> s.hold(),
+
+
+
+
+
+            ()=> {
+                this.slide.setTexture("slide_white"),
+                this.scene.launch('Training', { successive_correct_required: 3, grace_trials: 0, rythm_list: {"yellowEgg":[1,2,1,1]}})
+                this.scene.pause()},
+
+            ()=> s.hold(),
+
+            ()=> {
+                this.main_text.setText('')
+                this.scene.launch('Training', { successive_correct_required: 3, grace_trials: 0, rythm_list: {"redEgg":[2,2,1,1]}})
+                this.scene.pause()},
+
+            ()=> s.hold(),
+
+            ()=> {
+                this.main_text.setText('')
+                this.scene.launch('Training', { successive_correct_required: 3, grace_trials: 0, rythm_list: {"blueEgg":[1,2,1,2]}})
+                this.scene.pause()},
+
+            ()=> s.hold(),
+
+            ()=> {
+                this.main_text.setText('')
+                this.scene.launch('Training', { successive_correct_required: 3, grace_trials: 0, rythm_list: {"cyanEgg":[1,1,1,2]}})
+                this.scene.pause()},
+
+            ()=> this.main_text.setText("Please press SPACE to Continue"),
+            ()=> s.timer.waitClickOrKey(),
+
+
+            ()=> {
+                this.main_text.setText('')
+                this.scene.launch('Training', { successive_correct_required: 5, grace_trials: 0, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}})
+                this.scene.pause()},
+
+            ()=> this.main_text.setText("Please press SPACE to Continue"),
+            ()=> s.timer.waitClickOrKey(),
+
+
+
+            ()=> this.main_text.setText(slide_text.phase1_p1),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText(slide_text.phase1_p2),
+            ()=> s.timer.waitClickOrKey(),
+
+            ()=> {
+                this.main_text.setText('Loading Task...')
+                this.scene.launch('Game', { phase_id: 1, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1,2], "redEgg":[2,2,1,1], "yellowEgg":[1,2,1,1], "cyanEgg":[1,1,1,2]}, distractor_list: ["cyanEgg"]})
+                this.scene.pause()},
+            ()=> s.timer.waitClickOrKey(),
+
+            ()=> this.main_text.setText(slide_text.phase2_p1),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText(slide_text.phase2_p2),
+            ()=> s.timer.waitClickOrKey(),
+
+            ()=> {
+                this.main_text.setText('Loading Task...')
+                this.scene.launch('Game', { phase_id: 2, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,999,1], "redEgg":[1,999,1], "yellowEgg":[2,1,1], "cyanEgg":[1,999,1]}, distractor_list: ["blueEgg", "redEgg", "cyanEgg"]})
+                this.scene.pause()},
+            ()=> s.timer.waitClickOrKey(),
+
+            ()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p1),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p2),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p3),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText(slide_text.practice_2_and_phase_3_p4),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText("Note: Insert Training Yes/No?"),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> {this.main_text.setText(slide_text.phase_3)},
+            ()=> s.timer.waitClickOrKey(),
+
+            ()=> {
+                this.main_text.setText('Loading Task...')
+                this.scene.launch('Game', { phase_id: 3, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[2,2,1], "yellowEgg":[2,1,1], "cyanEgg":[1,1,2]}, distractor_list: []})
+                this.scene.pause()},
+            ()=> s.timer.waitClickOrKey(),
+
+            ()=> this.main_text.setText(slide_text.phase4),
+            ()=> s.timer.waitClickOrKey(),
+            ()=> {
+                this.main_text.setText('Loading Task...')
+                this.scene.launch('Game', { phase_id: 4, num_egg_per_color: general_config(1).eggs_per_color, rythm_list: {"blueEgg":[1,2,1], "redEgg":[1,999,1], "yellowEgg":[1,999,1], "cyanEgg":[1,999,1]}, distractor_list: ["redEgg","yellowEgg","cyanEgg"]})
+                this.scene.pause()},
+
+            ()=> s.timer.waitClickOrKey(),
+            ()=> this.main_text.setText(slide_text.finish),
+            ()=> exportToCsv(game_data_columns, game_data),
+            ()=> s.timer.waitClickOrKey()
+        ])
 
         this.sequence = s
 
@@ -1165,6 +1301,7 @@ class Training extends Phaser.Scene {
         this.debug_mode = false
         this.successive_correct_required = data.successive_correct_required
         this.rythm_list = data.rythm_list
+        this.grace_trials = data.grace_trials
     }
     
     preload() {
@@ -1199,105 +1336,209 @@ class Training extends Phaser.Scene {
         var clearInstruction = () => s.training_text.setText("")
         var setInstruction = (text) => s.training_text.setText(text)
         var resetEggs = () => {return new ListManager(Object.keys(this.rythm_list))}
-        var getRandomEgg = () => {return this.makeEgg(width/2, height/2, s.em.getRandom(), true, 1, 0.5)}
+
 
 
 
         //SEQUENCE START
 
 
-        s.screen_obj = this.add.image(width/2,height/2, "whitescreen")
+        s.screen_obj = this.add.image(width/2,height/2, "slide_white")
         s.training_text = this.add.text(width/2,height/2, "", { fontSize: '50px', fill: '#000  ', align: 'center' , fontFamily: "calibri"})
         s.training_text.setOrigin(0.5)
         s.right=true
         this.debug_fps_text = this.add.text(0,0, "", { fontSize: '30px', fill: '#000  ', align: 'left' , fontFamily: "calibri"})
         element.style.display = "none"
-        
-        s.q(()=> this.sound.context.resume())
-        
 
-        s.loop()
-            //Reproduce Rythm
+
+
+
+
+
+
+
+
+        s.qList([
+
+            ()=> this.sound.context.resume(),
+            ()=> s.loop(),
+                ()=> clearInstruction(),
+                ()=> s.em = resetEggs(),
+                ()=> s.timer.wait(1000),
+
+                ()=> s.loop(),
+                    ()=> s.var["image"] = this.makeEgg(width/2, height/2, s.em.getRandom(), true, 1, 0.5),
+                    ()=> s.var["rythm"] = this.rythm_list[s.var["image"].texture.key],
+
+                    ()=> s.loop(),
+                        ()=> clearInstruction(),
+                        ()=> s.var["image"].setOrigin(0.5,0.5),
+                        ()=> s.var["image"].setAlpha(0.5),
+                        ()=> s.timer.wait(1000),
+                        ...s.timer.q_playRythm("rythm", "image"),
+                        ()=> s.timer.wait(1000),
+                        ()=> s.var["image"].setOrigin(0.5,-0.5),
+                        ()=> s.var["image"].setAlpha(1),
+                        ()=> setInstruction("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg"),
+                        ...s.timer.q_waitRythm("rythm", (rythm_accuracy)=>{
+                                if(rythm_accuracy < 0.3) {
+                                    setInstruction("Correct!"); s.var["rythm_correct"]=true
+                                }else if(rythm_accuracy >= 0.45) {
+                                    setInstruction("Almost! Try Again"); s.var["rythm_correct"]=false
+                                }else {
+                                    setInstruction("Incorrect :/ Please try again"); s.var["rythm_correct"]=false
+                                }
+                            }),
+                        
+                        ()=> s.timer.wait(1000),
+                    ()=> s.while(()=>{return !s.var["rythm_correct"]}),
+
+                    ()=> s.var["image"].destroy(),
+                    ()=> clearInstruction(),
+                ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
+
+
+
+                ()=> s.setCheckpoint("RetryTest"),
+                        
+                ()=> s.loop(),
+                    ()=> this.debug_phase = s.getCounter()+1,
+                    ()=> s.var["happy_path"] = true,
+                    ()=> s.em = resetEggs(),
+                    ()=> setInstruction(`Trial ${s.getCounter()+1}/${this.successive_correct_required}`),
+                    ()=> s.timer.wait(1000),
+
+                    ()=> s.loop(),
+                        ()=> {s.timer.wait(500)},
+                        ()=> s.var["image"] = this.makeEgg(width/2, height/2, s.em.getRandom(), true, 1, 0.5),
+                        ()=> s.var["image"].setOrigin(0.5,-0.5),
+                        ()=> s.var["rythm"] = this.rythm_list[s.var["image"].texture.key],
+                                    
+                        ()=> s.loop(),
+                            ()=> setInstruction("Please tap the rythm that was associated with this egg"),
+                            ()=> s.var["image"].setAlpha(1),
+                            ...s.timer.q_waitRythm("rythm", (rythm_accuracy)=>{
+                                if(rythm_accuracy < 0.3) {
+                                    setInstruction("Correct!"); s.var["rythm_correct"]=true;
+                                }else if(rythm_accuracy >= 0.45) {
+                                    setInstruction("Almost!"); s.var["rythm_correct"]=false; 
+                                }else {
+                                    setInstruction("Incorrect"); s.var["rythm_correct"]=false;
+                                }
+                            }),
+
+                            ()=> s.timer.wait(1000),
+                            ()=> {if(!s.var["rythm_correct"] & (s.getCounter() < this.grace_trials)) {setInstruction("Try again"); s.timer.wait(1000)}},
+                            ()=> {if(!s.var["rythm_correct"] & (s.getCounter() >= this.grace_trials)) {s.var["happy_path"]=false} },
+                            ()=> clearInstruction(),
+                        ()=> s.while(()=> {return (!s.var["rythm_correct"] & (s.getCounter() < (this.grace_trials+1)))}),
+
+                        ()=> s.var["image"].destroy(),
+                        ()=> s.timer.wait(500),
+                        ()=> clearInstruction(),
+                    ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
+                ()=> s.while(()=>{return ((s.getCounter() < this.successive_correct_required) & s.var["happy_path"])}), //Number of Trials
+            ()=> s.while(()=>{return !s.var["happy_path"]}),
+        
+        ()=> setInstruction(""),
+        ()=> s.timer.wait(1000),
+        ()=> {this.scene.resume('Study'); this.scene.stop()},
+        ()=> s.timer.wait(1),
+        ()=> s.timer.wait(1)
+
+
+
+        ])
+
+
+
+
+
+        var test_sequence_1 = [
+
+            ()=> this.sound.context.resume(),
+        
+            ()=> s.loop(),
             
-                s.q(()=> this.debug_phase = 0)
-                s.q(()=> clearInstruction())
-                s.q(()=> s.em = resetEggs())
-                s.q(()=> s.timer.wait(1000))
+                ()=> this.debug_phase = 0,
+                ()=> clearInstruction(),
+                ()=> s.em = resetEggs(),
+                ()=> s.timer.wait(1000),
 
-                s.loop()
-                    s.q(()=> s.image = getRandomEgg())
-                    s.q(()=> s.rythm = this.rythm_list[s.image.texture.key])
+                ()=> s.loop(),
+                ()=> s.image = getRandomEgg(),
+                ()=> s.rythm = this.rythm_list[s.image.texture.key],
 
-                    s.loop()
-                        s.q(()=> clearInstruction())
-                        s.q(()=> s.image.setOrigin(0.5,0.5))
-                        s.q(()=> s.image.setAlpha(0.5))
-                        s.q(()=> s.timer.wait(1000))
-                        s.timer.q_playRythm(()=>{return s.rythm}, ()=>{return s.image})
-                        s.q(()=> s.timer.wait(1000))
-                        s.q(()=> s.image.setOrigin(0.5,-0.5))
-                        s.q(()=> s.image.setAlpha(1))
-                        s.q(()=> setInstruction("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg"))
-                        s.timer.q_waitRythm(()=>{return s.rythm},
-                                    ()=>{setInstruction("Correct!"),s.rythm_correct=true},
-                                    ()=>{setInstruction("Almost! Try Again"),s.rythm_correct=false},
-                                    ()=>{setInstruction("Incorrect :/ Please try again"),s.rythm_correct=false})
-                        s.q(()=> s.timer.wait(1000))
-                    s.while(()=>{return !s.rythm_correct})
+                ()=> s.loop(),
+                    ()=> clearInstruction(),
+                    ()=> s.image.setOrigin(0.5,0.5),
+                    ()=> s.image.setAlpha(0.5),
+                    ()=> s.timer.wait(1000),
+                    ...s.timer.q_playRythm(()=>{return s.rythm}, ()=>{return s.image}),
+                    ()=> s.timer.wait(1000),
+                    ()=> s.image.setOrigin(0.5,-0.5),
+                    ()=> s.image.setAlpha(1),
+                    ()=> setInstruction("Please repeat the rythm as you have heard it\nWhile hovering over the egg with your mouse and pressing SPACE\nor clicking the Egg"),
+                    ...s.timer.q_waitRythm(()=>{return s.rythm},
+                            ()=>{setInstruction("Correct!"),s.rythm_correct=true},
+                            ()=>{setInstruction("Almost! Try Again"),s.rythm_correct=false},
+                            ()=>{setInstruction("Incorrect :/ Please try again"),s.rythm_correct=false}),
+                    ()=> s.timer.wait(1000),
+                    ()=> s.while(()=>{return !s.rythm_correct},
 
-                    s.q(()=> s.image.destroy())
-                    s.q(()=> clearInstruction())
-                s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length})
+                    ()=> s.image.destroy(),
+                    ()=> clearInstruction(),
+                ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
 
                 //Recollect Rythm
 
-                s.setCheckpoint("RetryTest")
+                ()=> s.setCheckpoint("RetryTest"),
                 
-                s.loop()
-                    s.q(()=> this.debug_phase = s.getCounter()+1)
-                    s.q(()=> s.right = true)
-                    s.q(()=> s.em = resetEggs())
-                    s.q(()=> setInstruction(`Trial ${s.getCounter()+1}/${this.successive_correct_required}`))
-                    s.q(()=> s.timer.wait(1000))
+                ()=> s.loop(),
+                    ()=> this.debug_phase = s.getCounter()+1),
+                    ()=> s.right = true,
+                    ()=> s.em = resetEggs(),
+                    ()=> setInstruction(`Trial ${s.getCounter()+1}/${this.successive_correct_required}`),
+                    ()=> s.timer.wait(1000),
 
-                    s.loop()
-                        s.q(()=> {s.timer.wait(500)})
-                        s.q(()=> s.image = getRandomEgg())
-                        s.q(()=> s.image.setOrigin(0.5,-0.5))
-                        s.q(()=> s.rythm = this.rythm_list[s.image.texture.key])
-                        
-                        s.loop()
-                            s.q(()=> setInstruction("Please tap the rythm that was associated with this egg"))
-                            s.q(()=> s.image.setAlpha(1))
-                            s.timer.q_waitRythm(()=>{return s.rythm},
-                                ()=> {setInstruction("Correct!");s.rythm_correct=true},
-                                ()=> {setInstruction("Almost!");s.rythm_correct=false},
-                                ()=> {setInstruction("Incorrect");s.rythm_correct=false})
-                            s.q(()=> s.timer.wait(1000))
-                            s.q(()=> {if(!s.rythm_correct & (s.getCounter() < 1)) {setInstruction("Try again"); s.timer.wait(1000)}})
-                            s.q(()=> {if(!s.rythm_correct & (s.getCounter() >= 1)) {s.right=false} })
-                            s.q(()=> clearInstruction())
-                        s.while(()=> {return (!s.rythm_correct & (s.getCounter() < 2))})
+                    ()=> s.loop(),
+                        ()=> {s.timer.wait(500)},
+                        ()=> s.image = getRandomEgg(),
+                        ()=> s.image.setOrigin(0.5,-0.5),
+                        ()=> s.rythm = this.rythm_list[s.image.texture.key],
+                                
+                        ()=> s.loop(),
+                            ()=> setInstruction("Please tap the rythm that was associated with this egg"),
+                            ()=> s.image.setAlpha(1),
+                            ...s.timer.q_waitRythm(()=>{return s.rythm},
+                            ()=> {setInstruction("Correct!");s.rythm_correct=true},
+                            ()=> {setInstruction("Almost!");s.rythm_correct=false},
+                            ()=> {setInstruction("Incorrect");s.rythm_correct=false}),
 
-                        s.q(()=> s.image.destroy())
-                        s.q(()=> s.timer.wait(500))
-                        s.q(()=> clearInstruction())
-                    s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length})
-                s.while(()=>{return ((s.getCounter() < this.successive_correct_required) & (s.right == true))}) //Number of Trials
-        
-        s.while(()=>{return !s.right})
+                            ()=> s.timer.wait(1000),
+                            ()=> {if(!s.rythm_correct & (s.getCounter() < 1)) {setInstruction("Try again"); s.timer.wait(1000)}},
+                            ()=> {if(!s.rythm_correct & (s.getCounter() >= 1)) {s.right=false} },
+                            ()=> clearInstruction(),
+                        ()=> s.while(()=> {return (!s.rythm_correct & (s.getCounter() < 2))}),
+
+                        ()=> s.image.destroy(),
+                        ()=> s.timer.wait(500),
+                        ()=> clearInstruction(),
+                    ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
+                ()=> s.while(()=>{return ((s.getCounter() < this.successive_correct_required) & (s.right == true))}), //Number of Trials
             
-        s.q(()=> setInstruction(""))
-        s.q(()=> s.timer.wait(1000))
-        s.q(()=> {this.scene.resume('Study'); this.scene.stop()})
-        s.q(()=> s.timer.wait(1))
-        s.q(()=> s.timer.wait(1))
+            ()=> s.while(()=>{return !s.right}),
+            
+            ()=> setInstruction(""),
+            ()=> s.timer.wait(1000),
+            ()=> {this.scene.resume('Study'); this.scene.stop()},
+            ()=> s.timer.wait(1),
+            ()=> s.timer.wait(1)
+        ]
 
         //SEQUENCE END
 
 
-
-        s.pushQueue()
         this.sequence_list.push(s)
     }
 
@@ -1467,7 +1708,7 @@ class Game extends Phaser.Scene {
                 disappear_timer.remove(false)
             })
 
-            game_data.push([participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"dropped"])
+            game_data.push([participantId, trialId, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"dropped"])
 
     
         }
@@ -1502,18 +1743,18 @@ class Game extends Phaser.Scene {
             if(successful) {
                 this.collectEgg(egg_obj)
                 this.speed += general_config(1).speed_change_correct
-                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"collected"]
+                trial_data = [participantId, trialId, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"collected"]
 
             }else {
                 this.destroyEgg(egg_obj)
                 this.speed += general_config(1).speed_change_incorrect
-                trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"destroyed"]
+                trial_data = [participantId, trialId, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"destroyed"]
             }
         }else {
             if(!safeItemInArray(egg_obj.texture.key, this.distractor_list)) {
                 this.speed += general_config(1).speed_change_miss
             }
-            trial_data = [participant_id, trial_id, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"returned"]
+            trial_data = [participantId, trialId, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"returned"]
         }
 
         if(rythm_obj != 0) {
