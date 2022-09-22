@@ -707,7 +707,7 @@ class Sequence {
             this.goCheckpoint(this.loopCounter.length-1);
                 
         }else{
-            console.log("END LOOP")
+            console.log("END LOOP") 
             this.loopCounter.pop()
         }
     }
