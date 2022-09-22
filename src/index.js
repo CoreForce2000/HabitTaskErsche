@@ -588,7 +588,7 @@ export class RythmManager {
 // S:::::::::::::::SS E::::::::::::::::::::E   QQ:::::::::::Q      UU:::::::::UU    E::::::::::::::::::::EN::::::N        N::::::N     CCC::::::::::::CE::::::::::::::::::::E
 //  SSSSSSSSSSSSSSS   EEEEEEEEEEEEEEEEEEEEEE     QQQQQQQQ::::QQ      UUUUUUUUU      EEEEEEEEEEEEEEEEEEEEEENNNNNNNN         NNNNNNN        CCCCCCCCCCCCCEEEEEEEEEEEEEEEEEEEEEE
 //                                                        Q:::::Q                                                                                                             
-//                                                         QQQQQQ                                                                                                             
+//                                                         QQQQQQ                                                                                                        
                                                                                                                                                                                   
 
 
@@ -619,11 +619,10 @@ class Sequence {
 
         this.v = {}
 
-        this.pendingSequence = []
         this.sequence = []
 
         this.checkpoint = {}
-        this.loopCounter = []
+        this.loopId = []
 
         this.prevStep = -1
         this.currStep = 0
@@ -652,19 +651,6 @@ class Sequence {
         this.sequence = [...this.sequence, ...funcList]
     }
 
-    r(func) {
-        func()
-    }
-
-    log(text) {
-        this.q(()=> console.log(text))
-    }
-
-    /*
-    pushQueue() {
-        this.sequence = [...this.sequence, ...this.pending_sequence]
-    }*/
-
     step() {
         this.currStep++
     }
@@ -682,43 +668,22 @@ class Sequence {
         this.prevStep = this.currStep-1
     }
 
-    checkpoint(name) {
-        this.setCheckpoint(name)
-    }
-
-    jump(name) {
-        this.goCheckpoint(name)
-    }
-
     loop() {
-        this.loopCounter.push(0)
-        this.loopCounter[this.loopCounter.length-1]=0
-        this.setCheckpoint(this.loopCounter.length-1)
+        this.loopId++
+        this.setCheckpoint(this.loopId)
     }
 
-    getCounter() {
-        return this.loopCounter[this.loopCounter.length-1]
-    }
-
-    while(func) {
-        this.loopCounter[this.loopCounter.length-1]++
-        if(func()) {
-            console.log("ITERATE")
-            this.goCheckpoint(this.loopCounter.length-1);
-                
+    while(condition) {
+        if(condition) {
+            this.goCheckpoint(this.loopId);
         }else{
-            console.log("END LOOP") 
-            this.loopCounter.pop()
+            this.loopId--
         }
     }
 
     hold() {
         this.pass = true
     }
-
-
-    startTimer = () => {this.timer = Date.now()}
-    endTimer = () => {return Date.now()-this.timer }
 
     wait = (delay) => {
         this.stepBack()
@@ -760,7 +725,6 @@ class Sequence {
             scope.step()
             clickListener.removeListener("pointerdown");
         })
-
     }
 
 
@@ -774,6 +738,10 @@ class Sequence {
         });
     }
 
+
+    isDone = () => {
+        return (this.sequence.length == this.currStep+1)
+    }
 }
 
 
@@ -1095,9 +1063,7 @@ class Study extends Phaser.Scene {
                         ()=> clearInstruction(),
                     ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
     
-    
-    
-                    ()=> s.setCheckpoint("RetryTest"),
+
                             
                     ()=> s.loop(),
                         ()=> this.debug_phase = s.getCounter()+1,
@@ -1397,9 +1363,6 @@ class Training extends Phaser.Scene {
                     ()=> clearInstruction(),
                 ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
 
-
-
-                ()=> s.setCheckpoint("RetryTest"),
                         
                 ()=> s.loop(),
                     ()=> this.debug_phase = s.getCounter()+1,
@@ -1491,8 +1454,6 @@ class Training extends Phaser.Scene {
                 ()=> s.while(()=>{return s.getCounter() < Object.keys(this.rythm_list).length}),
 
                 //Recollect Rythm
-
-                ()=> s.setCheckpoint("RetryTest"),
                 
                 ()=> s.loop(),
                     ()=> this.debug_phase = s.getCounter()+1),
@@ -1871,42 +1832,169 @@ class Test extends Phaser.Scene {
 
     create(data) {
 
-        //
-        //scene.input.keyboard.on(button, onInput);
+        var s = new Sequence(this)
 
-        //var space_listener = this.input.keyboard.on("keydown-SPACE", ()=>{
-        //    console.log("Space pressed!")
-        //    //this.input.keyboard.removeKey('SPACE');
-        //    space_listener.destroy();
-        //});
+        
 
-        var pointer = true
-        var key = "SPACE"
+        //Test that on an empty sequence, play does not do anything
 
-        var key_listener = 0
-        var click_listener = 0
+        s.play()
 
-        var whenInput = () => {
-            console.log("Key/Click down!")
-            if(key_listener != 0) {
-                this.input.keyboard.removeKey(key);
-                key_listener.removeListener("down")
-            }
-            if(click_listener != 0) {
-                click_listener.removeListener("pointerdown")
-            }
+        console.assert(s.currStep==0)
+        console.assert(s.prevStep==-1)
+
+
+
+
+        //Test that on a sequence with 2 entries, both step components are incremented by one step
+
+        var s = new Sequence(this)
+        s.qList([
+            ()=>void 0,
+            ()=>void 0
+        ])
+    
+        play()
+
+        console.assert(s.currStep==2)
+        console.assert(s.prevStep==1)
+
+
+
+
+
+        //Test that on a sequence with three entries with a hold in the middle, the first play
+        //only plays until the hold (meaning, two steps), and the second play continues until the end (third step)
+
+        var s = new Sequence(this)
+        s.qList([
+            ()=>void 0,
+            ()=>s.hold(),
+            ()=>void 0,
+            ()=>void 0
+        ])
+
+        //Check that code only goes until hold position
+        
+        s.play()
+
+        console.assert(!s.isDone())
+        console.assert(s.currStep == 2)
+
+
+        //Check that code finishes after hold
+
+        s.play()
+
+        console.assert(s.isDone())
+        console.assert(s.currStep == 4)
+
+        //Check that further cycles dont cause an error (will throw a runtime error if not)
+
+        s.play();s.play();s.play()
+
+
+        //Check that stepBack() works
+
+        s.stepBack()
+        s.stepBack()
+
+        console.assert(!s.isDone())
+        console.assert(s.currStep == 2)
+
+
+        //Check that step() works
+
+        step() 
+
+        console.assert(s.isDone())
+        console.assert(s.currStep == 3)
+
+
+        //Check that play reinitiates game even after completion
+
+        s.play()
+
+        console.assert(s.isDone())
+        console.assert(s.currStep == 4)
+
+
+        //Test Loop
+
+        var s = new Sequence(this)
+
+        var i_refrence = 0
+
+        s.qList([
+            ()=>void 0,
+            ()=>void 0,
+            ()=>void 0,
+            ()=>s.loop(i=0),
+            ()=>void 0,
+            ()=>console.assert(i_refrence==i),
+            ()=>i_refrence++,
+            ()=>s.while(i<4,i++),
+        ])
+
+        play()
+
+        console.assert(s.currStep == 8)
+        console.assert(s.prevStep == 7)
+        console.assert(s.isDone())
+
+
+        //Test Variables, externalized blocks etc.
+
+
+        s.v.text = ()=>{return s.v.text}
+        //-> How to pass variables? hmm
+
+        var textAsserter(text) {
+            return [
+                ()=>console.assert(text==)
+
+
+            ]
         }
 
-        if(key != "") {
-            key_listener = this.input.keyboard.addKey(key).on('down', whenInput);
-        }
-        if(pointer) {
-            click_listener = this.input.on("pointerdown", whenInput)
-        }
+
+
+
+
+
+
+
+        //Test All wait thingies
+
+
+        var s = new Sequence(this)
+
+        this.text = this.add.text(width/2,height/2, "Interactive Testing... (waiting 2 seconds)", { fontSize: '30px', fill: '#FFF  ', align: 'left' , fontFamily: "calibri"})
+    
+        s.qList([
+            ()=> wait(2000),
+            ()=> this.text.setText("Press a bunch of keys except SPACE, then press SPACE"),
+            ()=> waitKey(),
+            ()=> this.text.setText("Press G"),
+            ()=> waitKey("G"),
+            ()=> this.text.setText("Press G Again"),
+            ()=> waitClickOrKey("G"),
+            ()=> this.text.setText("Click your Mouse"),
+            ()=> waitClick(),
+            ()=> this.text.setText("Click your Mouse again"),
+            ()=> waitClickOrKey(),
+
+        ])
+
+
+        waitClickButton(button)
+
+
     }
 
 
     update(time, delta) {
+        s.play()
     }
 }
 
