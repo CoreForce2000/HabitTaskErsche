@@ -185,7 +185,7 @@ function rythmToRythmBreaks(rythm) {
 
 function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
 
-    var ir_total_duration = sumArray(rythmToRythmBreaks(ir))
+    var ir_total_duration = sumArray(ir)
     var ar_total_beats = sumArray(rythmToRythmBreaks(ar))
 
     console.log(ir,ar)
@@ -691,6 +691,13 @@ class Sequence {
         this.sequence = [...this.sequence, ...appendSequence]
     }
 
+    destroy() {
+        this.sequence = []
+        this.asynchSequence = []
+        this.step=0
+        this.paused=true
+    }
+
 
 
     //Timer Functions
@@ -721,6 +728,55 @@ class Sequence {
         });
     }
 }
+
+
+
+
+
+
+
+
+
+
+class RythmDots {
+
+    constructor(scene, x,y, rythm) {
+        const DOT_MARGIN = 40
+
+        this.scene = scene
+        this.counter = 0
+
+        this.rythmDots = []
+        for(let i=0; i<rythm.length; i++) {
+            var dotX = x - ((rythm.length /2)*DOT_MARGIN) + ((f * DOT_MARGIN))
+
+            var showDot = rythm[f]
+            if(showDot) {
+                rythmDots.push(this.add.image(dotX, y , "rythmDot").setOrigin(0.5,0.5).setAlpha(0))
+            }
+        }
+    }
+
+    play() {
+        this.rythmDots[this.counter].setAlpha(1.0)
+        this.scene.time.addEvent({delay: 100, callback: () => {this.rythmDots[this.counter].setAlpha(0.5)}, callbackScope: this})
+        this.counter++
+        if(this.counter == this.rythmDots.length) {
+            this.counter = 0
+        }
+    }
+
+    resetPlay() {
+        this.counter = 0
+    }
+
+    destroy() {
+        for(var dot of this.rythmDots) {
+            dot.destroy()
+        }
+    }
+}
+
 
 
 
@@ -794,8 +850,9 @@ class Study extends Phaser.Scene {
 
 
 
+
     create(data) {
-        const EGG_RYTHM_DICT = {"eggBlue":[1,2,1], "eggRed":[1,1,2], "eggYellow":[2,1,1]}
+        const EGG_RYTHM_DICT = {"eggBlue":[1,1,0,1,1], "eggRed":[1,1,1,0,1], "eggYellow":[1,0,1,1,1]}
 
 
         this.slide = this.add.image(0.5* width, 0.5* height, "slideWhite").setOrigin(0.5,0.5).setScale(1.5);
@@ -825,6 +882,7 @@ class Study extends Phaser.Scene {
                 ()=> s.waitClick(this.args.image),
                 ()=> this.sound.play(this.args.sound),
                 ()=> s.loop(this.waitRythm_i=0),
+                
                     ()=> this.startTime = Date.now(),
                     ()=> s.waitClick(this.args.image),
                     ()=> this.userRythm.push(Date.now()-this.startTime),
@@ -836,25 +894,6 @@ class Study extends Phaser.Scene {
         }
 
 
-        var makeRythmDots = (args, returnFunc) => {
-            return [
-                ()=> this.args = args(),
-                ()=> this.rythmDots = [],
-                ()=> s.loop(this.f = 0),
-                    ()=> this.DOT_MARGIN = 40,
-                    ()=> this.dotPosition = 0.5* width - ((this.args.rythmList.length /2)*this.DOT_MARGIN) + ((this.f * this.DOT_MARGIN)),
-                    ()=> this.isTap = this.args.rythmList[this.f],
-        
-                    ()=> this.rythmDots.push(this.add.image(this.dotPosition, this.args.height , "rythmDot").setOrigin(0.5,0.5).setAlpha(0.5)),
-        
-                    ()=> {if(this.isTap) {this.rythmDots[this.f].setAlpha(0.5)}},
-                    ()=> {if(!this.isTap) {this.rythmDots[this.f].setAlpha(0)}},
-    
-                ()=> s.while(this.f++, this.f<this.args.rythmList.length),
-
-                ()=> returnFunc(this.rythmDots)
-            ]
-        }
 
 
         var destroyRythmDots = (args, returnFunc) => {
@@ -876,12 +915,6 @@ class Study extends Phaser.Scene {
             }
             return rythmTap
         }
-
-
-
-
-
-
 
 
 
@@ -913,33 +946,20 @@ class Study extends Phaser.Scene {
 
 
 
-        var slideBanner = ()=> {return [
+        var slidesInstruction = ()=> {return [
             ()=> this.slide.setTexture("slide1"),
-            ()=> s.wait(1000)]}
-
-        var slideInstruction1 = ()=> {return [
+            ()=> s.wait(1000),
             ()=> this.slide.setTexture("slide2"),
             ()=> this.nextButton.setAlpha(1),
             ()=> s.waitClick(this.nextButton),
-            ()=> this.nextButton.setAlpha(0),]}
-            
-        var slideInstruction2 = ()=> {return [
             ()=> this.slide.setTexture("slide3"),
-            ()=> this.nextButton.setAlpha(1),
             ()=> s.waitClick(this.nextButton),
             ()=> this.nextButton.setAlpha(0)]}
 
 
-    
-
-
-
-
-        var slideLearn = ()=> {return [
+        var slideLearn = (args, returnFunc)=> {return [ ()=> this.args = args(),
                 ()=> this.slide.setTexture("slideLearnBlank"),
-
                 ()=> this.egg.setTexture(this.eggColor).setAlpha(0.5),
-                ()=> this.rythmTap = beatToTapList(this.rythm),
                 
                 ...makeRythmDots(()=>{return {rythmList: this.rythmTap, height: (0.8*height)}}, (rythmDots)=>{this.rythmDots = rythmDots}),
 
@@ -950,7 +970,7 @@ class Study extends Phaser.Scene {
                     ()=> {if(this.isTap) {
                         this.sound.play("chisel"), //; this.scene.sound.context.resume()
                         this.rythmDots[this.f].setAlpha(1),
-                        this.time.addEvent({delay: 100, callback: () => {this.rythmDots[this.f].setAlpha(0.5)}, callbackScope: this}),
+                        
                         this.egg.setAlpha(1),
                         this.time.addEvent({delay: 100, callback: () => {this.egg.setAlpha(0.5)}, callbackScope: this})}},
                     ()=> s.wait(300),
@@ -965,9 +985,7 @@ class Study extends Phaser.Scene {
 
 
         s.q([
-            ...slideBanner(),
-            ...slideInstruction1(),
-            ...slideInstruction2(),
+            ...slidesInstruction(),
 
 
             //Training Phase
