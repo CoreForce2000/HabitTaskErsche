@@ -1508,7 +1508,6 @@ class Game extends Phaser.Scene {
 
             game_data.push([participantId, trialId, this.phase_id, Date.now()-this.start_time, egg_obj.texture.key, `${loc.x},${loc.y}`,"dropped"])
 
-    
         }
     }
 

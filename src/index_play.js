@@ -1,6 +1,18 @@
 const WIDTH = 1920
 const HEIGHT = 1080
 
+const TAP_SOUND = "chisel"
+const DIAMOND_SOUND = "diamond"
+const CRACK_SOUND = "glass_break"
+
+const TRAINING_EGG_REPS = 3
+const GAME_EGG_REPS = 10
+
+const EGG_LOC = {x:WIDTH*0.5, y:HEIGHT*0.46}
+const NEXT_BUTTON_LOC = {x:WIDTH*0.8, y:HEIGHT*0.93}
+const CURSOR_LOC = {x:WIDTH*0.51, y:HEIGHT*0.44}
+
+
 var config = {
     type: Phaser.AUTO,
     backgroundColor: "#FFF",
@@ -35,6 +47,57 @@ const game = new Phaser.Game(config);
 
 
 
+
+
+
+
+
+
+
+
+
+//Initialize Hover Listener
+
+const hover = {
+    imageInternal: undefined,
+    hoveringListener: {},
+
+    set image(val) {
+        this.imageInternal = val;
+
+        //Play all existing Listeners. If a listener is removed in the process of the loop, skip that
+        for(let key in this.hoveringListener) {
+            let listener = this.hoveringListener[key]
+            listener.func(val, listener.args)
+        }
+    },
+
+    get image() {
+        return this.imageInternal;
+    },
+
+    registerListener: function(listener, args=[]) {
+        if(Object.keys(this.hoveringListener).length == 0) {
+            var listenerId = 0
+        }else{
+            var listenerId = Math.max(Object.keys(this.hoveringListener)) +1 //Find highest existing key, and return that +1 as the next id 
+        }
+         
+        this.hoveringListener[listenerId] = {func:listener, args:args}
+        return listenerId
+    },
+
+    removeListener: function(listenerId) {
+        delete this.hoveringListener[listenerId]
+    } 
+  }
+
+
+
+
+
+
+
 function sumArray(array) {
 	const reducer = (accumulator, curr) => accumulator + curr;
 	return array.reduce(reducer)
@@ -56,6 +119,29 @@ function inArray(item, arr) {
     }
     return false
 }
+
+function shuffle(arr) {
+	return [...arr.sort(() => Math.random() - 0.5)]
+}
+
+
+function randomizeSequence(items, length) {
+    let result = []
+  
+    for(let i=0; i< (length / 4); i++) {
+  	    result = [...result, ...shuffle(items)]
+    }
+  
+    return result
+}
+
+
+function getValues(dict) {
+	var values = []; 
+    Object.keys(dict).forEach((key)=> {values.push(dict[key])})
+    return values;
+ }
+
 
 function rythmToRythmBreaks(rythm) {
     var newRythm = []
@@ -90,13 +176,10 @@ function rythmToRythmBeats(rythm) {
 }
 
 
-
 function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
 
     var ir_total_duration = sumArray(ir)
     var ar_total_beats = sumArray(ar)
-
-    console.log(ir,ar)
 
     var ir_mean_beat_duration = ir_total_duration / ar_total_beats
     
@@ -115,6 +198,42 @@ function rythmsMatch(ir, ar) { //Inputs are input_rythm and actual_rythm
 }
 
 
+function setHoverable(image) {
+    image.on('pointerover',() => { hover.image = image; })
+    image.on('pointerout',() => {hover.image = undefined; })
+}
+
+
+
+function exportToCsv(columns, data) {
+    var csv;
+    var orderedData = [];
+    
+    for(var i = 0; i < data.length; i++) {
+        orderedData.push(data[i].join(','));
+    }    
+
+    csv = columns.join(',') + '\r\n' + orderedData.join('\r\n');
+
+    var downloadLink = document.createElement("a");
+    var blob = new Blob(["\ufeff", csv]);
+    var url = URL.createObjectURL(blob);
+
+    downloadLink.href = url;
+    downloadLink.download = "data.csv";
+
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+
+}
+
+
+function getTimestamp() {
+    return new Date().toLocaleString()
+}
+
+
 
 
 class Sequence {
@@ -123,7 +242,7 @@ class Sequence {
     constructor(scene, sequence=[]) {
         this.scene = scene
 
-        this.asynchSequences = {}
+        this.asynchSequences = []
     
         this.step = 0
         this.paused = false
@@ -131,9 +250,10 @@ class Sequence {
     }
 
     play() {
+
         while(!this.isDone() & !this.isPaused()) {
             var currObject = this.sequence[this.step]
-            
+
             //If it is a list, expand it, and ignore the execution
             if(Object.prototype.toString.call(currObject) === '[object Array]') {
                 this.sequence.splice(this.step+1, 0, ...currObject);
@@ -141,25 +261,27 @@ class Sequence {
             }else if(typeof currObject === 'function') {
                 currObject()
             }else {
-                console.error("Runner found non processable item in sequence. Allowed are Arrays and Functions")
+                //console.error("Runner found non processable item in sequence. Allowed are Arrays and Functions")
             }
-            
             this.step++
         }
 
         //Play all asynchronous tasks
-        for(let seqName of Object.keys(this.asynchSequences)) {
-            this.asynchSequences[seqName].play()
+        var i=0
+        for(let as of this.asynchSequences) {
+            as.play()
+            if(as.isDone()) {
+                this.asynchSequences.splice(i, 1)
+            }
+            i++
         }
     }
 
-    asynch(name, asynchSequence) {
-        if(inArray(name, Object.keys(this.asynchSequences))) {
-            throw "Name of asynch sequence is already assigned! Choose a different one"
-        } else {
-            this.asynchSequences[name] = asynchSequence
-        }
-        
+
+    asynch(asynchFunc) {
+        let as = new Sequence(this.scene)
+        asynchFunc(as)
+        this.asynchSequences.push(as)
     }
 
     pause() {
@@ -175,12 +297,13 @@ class Sequence {
     }
 
     isDone() {
-        return this.step == this.sequence.length
+        return (this.step == this.sequence.length)
     }
+
 
     while(condition, loopSequence) {
         if(condition) {
-            loopSequence.push(this.sequence[this.step])
+            loopSequence.push(this.sequence[this.step]) //This step is where the while statement is executed, put at end of sequece to recursively activate it
             this.insert(loopSequence)
         }
     }
@@ -212,34 +335,149 @@ class Sequence {
 
 
     //Timer Functions
-
+/*
     wait(delay) {
         this.pause()
         var waitDelay = delay
         this.scene.time.addEvent({delay: waitDelay, callback: () => {this.resume()}, callbackScope: this})
+    }*/
+
+    wait(delay) {
+        this.waitInput(delay)
     }
 
-
     waitClick(image) {
-        this.pause()
-        var scope = this
-        
-        if(image !== undefined) {
-            var clickListener = image.on('pointerdown',()=> {scope.resume();clickListener.removeListener("pointerdown")})
-        }else{
-            var clickListener = this.scene.input.on("pointerdown", () => {this.resume();clickListener.removeListener("pointerdown")})
-        }
+        this.waitInput({trigger:"CLICK", image:image})
     }
 
     waitKey(key="SPACE", image) {
+        this.waitInput({trigger:key, image:image})
+    }
+
+
+    //{trigger, image, func}
+    //Order matters! Earlier events are prioritized.
+    
+    //There have been several issues with this function that have been resolved:
+    // - the wrong function was being called. this was because onTrigger was defined global, and each new listener just changed that. It worked for 
+    //   some as it was passed into the listener as a "onTrigger", but for those where it was passed as "onTrigger()", it executed the function that it was
+    //   last assigned to, usually not the one we want.
+    //
+    // - For some reason, button event is called even after it has been delted (perhaps internally it calls all events before the delete goes through?)
+    //   Created a list, where all registered images are logged. The "global" button press only triggers if it is not hovering over any of the previously
+    //   registered images. 
+    //
+    //   Issue will still remain for double assignment of any of the listeners though! 
+
+
+    waitInput(actionList) {
         this.pause()
-        var keyListener = this.scene.input.keyboard.addKey(key).on('down', () => {
-            this.resume()
-            this.scene.input.keyboard.removeKey(key) 
-            keyListener.removeListener("down")
-        });
+
+        let clearListenerFunc = []
+        let actionImagesKeyboard = []
+
+        if(actionList.constructor !== Array) {
+            if(actionList.constructor === Object) {
+                actionList=[actionList]
+            }else{
+                if(typeof actionList === "string") {
+                    actionList=[{trigger:actionList}]
+                }else if(typeof actionList === "number") {
+                    actionList=[{timer:actionList}]
+                }else{
+                    console.error(`TypeError in waitInput: Value of type ${typeof actionList} is not allowed as an input`)
+                }
+            }
+        }
+
+        for(let action of actionList) {
+
+            action.func = action.func ?? (()=> {})
+            let onTrigger = ()=> {action.func() ?? void 0; clearListenerFunc.forEach((clearListener)=> clearListener()); this.resume()}
+
+            //Click listener
+
+            if(action.trigger == "CLICK") {
+
+                var clicklisteners = []
+
+                //Set Listener 
+                if(action.image !== undefined) {
+                    clicklisteners.push(action.image.on('pointerdown', onTrigger))
+                }else{
+                    clicklisteners.push(this.scene.input.on("pointerdown", onTrigger))
+                }
+
+                //Prepare Remove Listener
+                clicklisteners.forEach( (listener)=> clearListenerFunc.push(()=> {listener.removeListener("pointerdown")})
+                )
+
+
+            //Hover Listener
+
+            }else if(action.trigger == "HOVER") {
+
+                var hoverListeners = []
+
+                //Set Listener 
+                if(action.image !== undefined) {
+                    hoverListeners.push(hover.registerListener((image)=> {if(action.image == image) {onTrigger()}}))
+                    
+                }else{
+                    hoverListeners.push(hover.registerListener(onTrigger))
+                }
+                
+                //Prepare Remove Listener
+                hoverListeners.forEach((listener)=> {
+                    clearListenerFunc.push(()=> hover.removeListener(listener))
+                })
+
+            }else{
+
+                // Wait Keyboard
+
+                if(typeof action.trigger === "string") {
+                    try {
+                        let key = action.trigger
+                        
+                        var keyListeners = []
+                        //Set Listener 
+                        if(action.image !== undefined) {
+                            actionImagesKeyboard.push(action.image)
+                            keyListeners.push(this.scene.input.keyboard.addKey(key).on('down', ()=> {if(hover.image == action.image) {onTrigger()}}));
+                        }else{
+                            keyListeners.push(this.scene.input.keyboard.addKey(key).on('down', ()=> {if(!inArray(hover.image, actionImagesKeyboard)) {onTrigger()}}));
+                        }
+    
+                        //Prepare Remove Listener
+                        keyListeners.forEach((listener)=> { clearListenerFunc.push(()=> {
+                            this.scene.input.keyboard.removeKey(key); 
+                            listener.removeListener("down")});
+                            
+                        })
+    
+                    } catch (error) {
+                        console.error(error);
+                    }
+
+                // Wait timer
+
+                }else if(typeof action.timer === "number") {
+                    let timer = this.scene.time.addEvent({delay: action.timer, callback: onTrigger, callbackScope: this})
+
+                    clearListenerFunc.push(()=> {timer.remove(false)})
+
+
+                // Wait rythm
+
+                }else{
+                    console.error("No input given for waitInput()")
+                }
+            }
+        }
     }
 }
+
 
 
 class PsyImage {
@@ -252,6 +490,7 @@ class PsyImage {
 
         if(interactive) {
             this.image.setInteractive({ useHandCursor: true })
+            setHoverable(this.image)
         }
     }
 
@@ -277,6 +516,10 @@ class PsyImage {
     setImage(image) {
         this.image.setTexture(image)
         return this
+    }
+
+    destroy() {
+        this.image.destroy()
     }
 }
 
@@ -415,44 +658,6 @@ function initSubmitButton() {
 
 
 
-function shuffle(arr) {
-	return arr.sort(() => Math.random() - 0.5)
-}
-
-
-function playRythm(scene, rythm, funcBeat) {
-    scene.s.insert([
-        ()=> scene.rythmBeats = rythmToRythmBeats(rythm),
-        ()=> scene.pRi=0,
-        ()=> scene.s.while(scene.pRi<scene.rythmBeats.length, [
-            ()=> scene.playBeat = scene.rythmBeats[scene.pRi],
-
-            ()=> scene.s.if(scene.playBeat, [
-                ()=> funcBeat(),
-            ]),
-            ()=> scene.s.wait(300),
-            ()=> scene.pRi++
-        ])
-    ])
-}
-
-
-function waitRythm(scene, rythm, image, onClick, returnFunc) {
-    scene.s.insert([
-        ()=> scene.userRythm = [],
-
-        ()=> scene.wRi=0,
-        ()=> scene.s.while(scene.wRi <= rythm.length, [
-            ()=> scene.startTime = Date.now(),
-            ()=> scene.s.waitClick(image),
-            ()=> scene.userRythm.push(Date.now()-scene.startTime),
-            ()=> onClick(),
-            ()=> scene.wRi++
-        ]),
-
-        ()=> returnFunc(rythmsMatch(scene.userRythm.slice(1), rythm))
-    ])
-}
 
 
 
@@ -505,6 +710,7 @@ class MoveImage {
 
 
 
+
 function preload ()
 {
     var img_slides = ["nextButton.PNG","rythmDot.png","clickUp.png", "clickDown.png",
@@ -533,205 +739,504 @@ function preload ()
 
 
 
+                                                                                                 
+                                                                                                      
+//         GGGGGGGGGGGGG               AAA               MMMMMMMM               MMMMMMMMEEEEEEEEEEEEEEEEEEEEEE
+//      GGG::::::::::::G              A:::A              M:::::::M             M:::::::ME::::::::::::::::::::E
+//    GG:::::::::::::::G             A:::::A             M::::::::M           M::::::::ME::::::::::::::::::::E
+//   G:::::GGGGGGGG::::G            A:::::::A            M:::::::::M         M:::::::::MEE::::::EEEEEEEEE::::E
+//  G:::::G       GGGGGG           A:::::::::A           M::::::::::M       M::::::::::M  E:::::E       EEEEEE
+// G:::::G                        A:::::A:::::A          M:::::::::::M     M:::::::::::M  E:::::E             
+// G:::::G                       A:::::A A:::::A         M:::::::M::::M   M::::M:::::::M  E::::::EEEEEEEEEE   
+// G:::::G    GGGGGGGGGG        A:::::A   A:::::A        M::::::M M::::M M::::M M::::::M  E:::::::::::::::E   
+// G:::::G    G::::::::G       A:::::A     A:::::A       M::::::M  M::::M::::M  M::::::M  E:::::::::::::::E   
+// G:::::G    GGGGG::::G      A:::::AAAAAAAAA:::::A      M::::::M   M:::::::M   M::::::M  E::::::EEEEEEEEEE   
+// G:::::G        G::::G     A:::::::::::::::::::::A     M::::::M    M:::::M    M::::::M  E:::::E             
+//  G:::::G       G::::G    A:::::AAAAAAAAAAAAA:::::A    M::::::M     MMMMM     M::::::M  E:::::E       EEEEEE
+//   G:::::GGGGGGGG::::G   A:::::A             A:::::A   M::::::M               M::::::MEE::::::EEEEEEEE:::::E
+//    GG:::::::::::::::G  A:::::A               A:::::A  M::::::M               M::::::ME::::::::::::::::::::E
+//      GGG::::::GGG:::G A:::::A                 A:::::A M::::::M               M::::::ME::::::::::::::::::::E
+//         GGGGGG   GGGGAAAAAAA                   AAAAAAAMMMMMMMM               MMMMMMMMEEEEEEEEEEEEEEEEEEEEEE                                                                             
+                                                                                                    
+
+
+function playRythm(scene, rythm, funcBeat) {
+    scene.s.insert([
+        ()=> scene.rythmBeats = rythmToRythmBeats(rythm),
+        ()=> scene.pRi=0,
+        ()=> scene.s.while(scene.pRi<scene.rythmBeats.length, [
+            ()=> scene.playBeat = scene.rythmBeats[scene.pRi],
+
+            ()=> scene.s.if(scene.playBeat, [
+                ()=> funcBeat(),
+            ]),
+            ()=> scene.s.wait(300),
+            ()=> scene.pRi++
+        ])
+    ])
+}
+
+
+
+function waitRythm(s, rythm, image, onClick, returnFunc, initTimeout=99999, timeout=99999) {
+
+    s.insert([
+        ()=> s.trigger = [{trigger: "CLICK", image:image, func:onClick}, {trigger: "R", image:image, func:onClick}],
+        ()=> s.timer = {timer: initTimeout, image:image, func: ()=> {s.wRi = rythm.length; s.rythmAccuracy= -1}},
+
+        ()=> s.userRythm = [],
+        ()=> s.rythmAccuracy = undefined,
+
+        ()=> s.wRi=0,
+        ()=> s.while(s.wRi <= rythm.length, [
+            ()=> s.if(s.wRi > 0, [
+                ()=> s.timer.timer = timeout
+            ]),
+            ()=> s.startTime = Date.now(),
+            ()=> s.waitInput([...s.trigger, s.timer]),
+            ()=> s.userRythm.push(Date.now()-s.startTime),
+            ()=> s.wRi++
+        ]),
+
+        ()=> s.if(s.rythmAccuracy === undefined, [ //If the rythm is not set to be 1 due to incomplete rythm making
+            ()=> s.rythmAccuracy = rythmsMatch(s.userRythm.slice(1), rythm)
+        ]),
+
+        ()=> returnFunc(s.rythmAccuracy, s.userRythm)
+    ])
+}
 
 
 
 
 
 
-const EGG_RYTHM_DICT = {"eggBlue":[1,2,1], "eggRed":[1,1,2], "eggYellow":[2,1,1]}
-const TAP_SOUND = "chisel"
-
-const EGG_REPS = 3
 
 
-const EGG_LOC = {x:WIDTH*0.5, y:HEIGHT*0.46}
-const NEXT_BUTTON_LOC = {x:WIDTH*0.8, y:HEIGHT*0.93}
-const CURSOR_LOC = {x:WIDTH*0.51, y:HEIGHT*0.44}
+
+
+var EGG_RYTHM_DICT = {"eggBlue":[2,1,2,1], "eggRed":[2,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,1]}
+
+var EGG_RYTHM_TRAINING = {"eggBlue":[2,1,2,1], "eggRed":[2,1,2,2], "eggYellow":[1,2,2,1]}
 
 function create ()
 {
+
     var s = new Sequence(this)
 
+    this.date = new Date();
+
+
     this.debugMode = false
-    this.debugText = this.add.text(20,20, '', { fontSize: '35px', fill: '#C00', align: 'left', fontFamily: "calibri"}).setOrigin(0).setAlpha(0),
+
+    this.metadata = {phase:"", step:"", trial:1, egg:"", rythm:"", support:false, additionalInfo:""}
+
+
+    this.debugText = this.add.text(20,20, '', { fontSize: '35px', fill: '#C00', align: 'left', fontFamily: "calibri"}).setOrigin(0).setAlpha(0)
+
+    this.slide = new PsyImage(this, WIDTH/2, HEIGHT/2, "white", 1, 1.5)
+    this.nextButton = new PsyImage(this, NEXT_BUTTON_LOC.x, NEXT_BUTTON_LOC.y, "nextButton", 0, 1.5, [0.5,0.5], true)
+    this.trainingEgg = new PsyImage(this, EGG_LOC.x, EGG_LOC.y, "eggBlue", 0, 1, [0.5,0.5], true)
+    this.cursorImage = new CursorImage(this, CURSOR_LOC.x, CURSOR_LOC.y, "clickUp", "clickDown", 0.3)
+
+
+    this.userRythm = [-1,-1]
+    this.rythm = ""
+    this.location = ""
+    
+    this.columns = []
+
+    this.data = []
+    var logData = ()=> {
+
+        var rawData = {
+            "Timestamp" : getTimestamp(),
+
+            "STAGE.Id": this.stage,
+            "STAGE.Show_Rythm" : this.displayRythm,
+
+            "EGG.Rythm": JSON.stringify(this.rythm).replace(/,/g, '-'),
+            "EGG.Color"  : this.eggColor,
+            "EGG.Location" : JSON.stringify(this.location).replace(/,/g, '-'),
+            "EGG.Progress" : this.eggProgressEgg,
+
+            "USER.Time_Hover" : this.timeHover,
+            "USER.Time_Rythm_Start" : this.userRythm[0],
+            "USER.Rythm_Applied" : JSON.stringify(this.userRythm.slice(1)),
+            "USER.Rythm_Error" : this.rythmAccuracy,
+            
+        }
+
+
+        this.columns = Object.keys(rawData)
+
+        let row = []
+        for(let column in rawData) {
+            row.push(rawData[column])
+        }
+
+        this.data.push(row)
+
+        console.log(row)
+    }
+
+
 
     s.q([
 
-        //Setup of variables, debug mode, etc.
-        
-        ()=> this.slide = new PsyImage(this, WIDTH/2, HEIGHT/2, "white", 1, 1.5),
-        ()=> this.nextButton = new PsyImage(this, NEXT_BUTTON_LOC.x, NEXT_BUTTON_LOC.y, "nextButton", 0, 1.5, [0.5,0.5], true),
-        ()=> this.trainingEgg = new PsyImage(this, EGG_LOC.x, EGG_LOC.y, "eggBlue", 0, 1, [0.5,0.5], true),
-        ()=> this.cursorImage = new CursorImage(this, CURSOR_LOC.x, CURSOR_LOC.y, "clickUp", "clickDown", 0.3),
-        
+        ...[ //Wait until Submit button is pressed
+            ()=> initSubmitButton(),
+            ()=> s.while(participantId==0, [()=> s.wait(20)]),
+        ],
 
-        ()=> initSubmitButton(),
+        ...[//Initialize Debug Mode
+            ()=> s.if(this.debugMode, 
+                ()=> this.debugText.setAlpha(1)
+            ),
+        ],
 
-        ()=> s.while(participantId==0, [()=> s.wait(20)]),
-
-
-        //Initialize Debug Mode
-        ()=> s.if(this.debugMode, [
-            ()=> this.debugText.setAlpha(1)
-        ]),
-
-        //Initial Block
-
-        ()=> this.slide.setImage("slide1"),
-        ()=> s.wait(2000),
-
-
-        ()=> this.slide.setImage("slide2"),
-        ()=> this.nextButton.show(),
-        ()=> s.waitClick(this.nextButton.getPhaserImage()),
-        ()=> this.slide.setImage("slide3"),
-        ()=> s.waitClick(this.nextButton.getPhaserImage()),
-
-        //Training on Single Eggs
-
-        ()=> this.eggList = shuffle(Object.keys(EGG_RYTHM_DICT)),
-
-        //For each Egg color
-        ()=> s.while(false, [ //this.eggList.length>0
-            ()=> this.eggColor = this.eggList.pop(),
-            ()=> this.rythm = EGG_RYTHM_DICT[this.eggColor],
-
-            ()=> this.repeatTrial=true,
-            ()=> s.while(this.repeatTrial, [
-                ()=> this.repeatTrial = false,
-                ()=> this.slide.setImage("slideLearnBlank"),
-                ()=> this.trainingEgg.setImage(this.eggColor),
-                ()=> this.trainingEgg.show(),
-                ()=> this.rythmDots = new RythmDots(this, WIDTH/2, HEIGHT*0.8, this.rythm),
-    
-                ()=> this.nextButton.hide(),
-
-                ()=> s.wait(1000),
-
-                //Play Rythm
-
-                ()=> this.cursorImage.show(),
-                ()=> s.wait(1000),
-                ()=> playRythm(this, this.rythm, ()=> {
-                    this.sound.play(TAP_SOUND); 
-                    this.rythmDots.play();
-                    this.cursorImage.click();
-                }),
-    
-                //Present the Egg and Rythm
-    
-                ()=> s.wait(1000),
-                ()=> this.cursorImage.hide(),
-    
-                //Ask to replicate the rythm, EGG_REPS times in a row, with support
-
-                ()=> this.f=0,
-                ()=> s.while((this.f < EGG_REPS) & (!this.repeatTrial), [
-                    ()=> this.slide.setImage("slideReproduceBlank"),
-                    ()=> this.trainingEgg.setImage(this.eggColor),
-                    ()=> this.rythmDots.show(),
-                
-                    
-                    ()=> waitRythm(this, this.rythm, this.trainingEgg.getPhaserImage(), ()=> {this.sound.play(TAP_SOUND)}, (rythmAccuracy)=>{this.rythmAccuracy = rythmAccuracy}),
-        
-                    ()=> this.rythmDots.hide(),
-
-                    ()=> s.if(this.rythmAccuracy < 0.3, [
-                        ()=> this.slide.setImage("slideCorrectBlank"),
-                        ()=> this.trainingEgg.setImage(`diamond`),
-                    ]),
-                    ()=> s.if(this.rythmAccuracy >= 0.3, [
-                        ()=> this.slide.setImage("slideIncorrectBlank"),
-                        ()=> this.trainingEgg.setImage(`${this.eggColor}Shell`),
-                        ()=> this.repeatTrial = true,
-                    ]),
-        
-                    ()=> s.wait(1500),
-                    ()=> this.f++
-                ]),
-
-
-
-                //Ask to replicate, EGG_REPS times in a row, without support
-
-                ()=> this.f=0,
-                ()=> s.while((this.f < EGG_REPS) & (!this.repeatTrial), [
-                    ()=> this.slide.setImage("slideReproduceBlank"),
-                    ()=> this.trainingEgg.setImage(this.eggColor),
-
-                    ()=> waitRythm(this, this.rythm, this.trainingEgg.getPhaserImage(), ()=> {this.sound.play(TAP_SOUND), console.log("Tap!")}, (rythmAccuracy)=>{this.rythmAccuracy = rythmAccuracy}),
-
-                    ()=> s.if(this.rythmAccuracy < 0.3, [
-                        ()=> this.slide.setImage("slideCorrectBlank"),
-                        ()=> this.trainingEgg.setImage(`diamond`),
-                    ]),
-                    ()=> s.if(this.rythmAccuracy >= 0.3, [
-                        ()=> this.slide.setImage("slideIncorrectBlank"),
-                        ()=> this.trainingEgg.setImage(`${this.eggColor}Shell`),
-                        ()=> this.repeatTrial = true,
-                    ]),
-        
-                    ()=> s.wait(1500),
-                    ()=> this.f++
-
-                ]),
-            ]),
-        ]),
-
-
-
-        ()=> this.nextButton.hide(),
-
-        //Phase, now with all three eggs
-        
-        
-        ()=> this.eggProgress = {"eggBlue":0, "eggRed":0, "eggYellow":0},
-
-        ()=> s.while(Object.keys(this.eggProgress).length > 0, [
-            ()=> this.shuffled = shuffle(Object.keys(this.eggProgress)),
-            ()=> console.log(this.shuffled),
-            ()=> console.log(this.eggProgress),
-            ()=> this.eggColor = this.shuffled.pop(), //Get random Egg from existing eggs dict
-
-            ()=> this.rythm = EGG_RYTHM_DICT[this.eggColor],
-            ()=> this.rythmDots = new RythmDots(this, WIDTH/2, HEIGHT*0.8, this.rythm),
-
-            ()=> s.if(this.eggProgress[this.eggColor] != 0, [ //If its first egg show memory aid (dots)
-                ()=> this.rythmDots.hide()
-            ]),
-            
-
-            //Same code as above, let participant reproduce rythm
-
-            ()=> this.slide.setImage("slideReproduceBlank"),
-            ()=> this.trainingEgg.setImage(this.eggColor).show(),
-
-            ()=> waitRythm(this, this.rythm, this.trainingEgg.getPhaserImage(), ()=> {this.sound.play(TAP_SOUND), console.log("Tap!")}, (rythmAccuracy)=>{this.rythmAccuracy = rythmAccuracy}),
-
-            ()=> this.rythmDots.destroy(),
-
-            ()=> s.if(this.rythmAccuracy < 0.3, [
-                ()=> this.eggProgress[this.eggColor]++,
-                ()=> this.slide.setImage("slideCorrectBlank"),
-                ()=> this.trainingEgg.setImage(`diamond`),
-            ]),
-            ()=> s.if(this.rythmAccuracy >= 0.3, [
-                ()=> this.eggProgress[this.eggColor] = 0,
-                ()=> this.slide.setImage("slideIncorrectBlank"),
-                ()=> this.trainingEgg.setImage(`${this.eggColor}Shell`),
-                ()=> this.repeatTrial = true,
-            ]),
-
-            //Check if egg is done (remove from dict)
-            
-            ()=> s.if(this.eggProgress[this.eggColor] == EGG_REPS+1, [ //+1 because of the practise trial with the dots shown
-                ()=> delete this.eggProgress[this.eggColor]
-            ]),
-
+        ...[ //Introduction Slides
+            ()=> this.slide.setImage("slide1"),
             ()=> s.wait(1500),
+            ()=> this.slide.setImage("slide2"),
+            ()=> this.nextButton.show(),
+            ()=> s.waitClick(this.nextButton.getPhaserImage()),
+            ()=> this.slide.setImage("slide3"),
+            ()=> s.waitClick(this.nextButton.getPhaserImage()),
+        ],
+        
+        void [ //Phase 1: Aquisition
 
-        ]),
+            ...[ //Prepare Phase 1
+                ()=> this.stage = "Aquisition",
+                ()=> this.eggList = shuffle(Object.keys(EGG_RYTHM_TRAINING)),
+            ],
+
+            ...[ //Run Phase 1
+                ()=> s.while(this.eggList.length>0, [ 
+                    
+                    ...[ //Get Egg Color
+                        ()=> this.eggColor = this.eggList.pop(),
+                        ()=> this.rythm = EGG_RYTHM_DICT[this.eggColor],
+                    ],
+
+                    ...[ //Play and Reset when Error is made
+                        ()=> this.repeatTrial=true,
+                        ()=> s.while(this.repeatTrial, [
+
+                            ...[ //Play Rythm
+
+                                ...[ //Make Slide Learn
+                                    ()=> this.repeatTrial = false,
+                                    ()=> this.slide.setImage("slideLearnBlank"),
+                                    ()=> this.trainingEgg.setImage(this.eggColor),
+                                    ()=> this.trainingEgg.show(),
+                                    ()=> this.rythmDots = new RythmDots(this, WIDTH/2, HEIGHT*0.8, this.rythm),
+                                    ()=> this.nextButton.hide(),
+                                    ()=> s.wait(1000),
+                                    
+                                ],
+
+                                ...[ //Play Rythm
+                                    ()=> this.cursorImage.show(),
+                                    ()=> s.wait(1000),
+                                    ()=> playRythm(this, this.rythm, ()=> {
+                                        this.sound.play(TAP_SOUND); 
+                                        this.rythmDots.play();
+                                        this.cursorImage.click();
+                                    }),
+                                    ()=> s.wait(1000),
+                                    ()=> this.cursorImage.hide(),
+                                ]
+                            ],
+        
+                            ...[ //Ask to Repeat Egg, with Support
+
+                                ()=> this.displayRythm = true,
+                                ()=> this.f=0,
+                                ()=> s.while((this.f < TRAINING_EGG_REPS) & (!this.repeatTrial), [
+            
+                                    ...[ //Prepare Trial
+                                        ()=> this.slide.setImage("slideReproduceBlank"),
+                                        ()=> this.trainingEgg.setImage(this.eggColor),
+                                        ()=> this.rythmDots.show(),
+                                    ],
+            
+                                    ...[ //Wait for Rythm
+                                
+                                        ()=> waitRythm(s, this.rythm, this.trainingEgg.getPhaserImage(), ()=> {
+                                            this.sound.play(TAP_SOUND);
+            
+                                        }, (rythmAccuracy)=>{this.rythmAccuracy = rythmAccuracy}),
+
+                                        ()=> this.rythmDots.hide(),
+                                    ],
+            
+                                    ...[ //Check if Correct
+                                            ()=> s.if(this.rythmAccuracy < 0.3, [
+                                                ()=> this.slide.setImage("slideCorrectBlank"),
+                                                ()=> this.trainingEgg.setImage(`diamond`),
+                                                ()=> this.sound.play(DIAMOND_SOUND),
+                                            ]),
+                                            ()=> s.if(this.rythmAccuracy >= 0.3, [
+                                                ()=> this.slide.setImage("slideIncorrectBlank"),
+                                                ()=> this.trainingEgg.setImage(`${this.eggColor}Shell`),
+                                                ()=> this.repeatTrial = true,
+                                                ()=> this.sound.play(CRACK_SOUND),
+                                            ]),
+                                            ()=> s.wait(1500),
+                                    ],
+
+                                    ...[ //Log data
+                                        ()=> logData()
+                                    ],
+
+                                ()=> this.f++]),
+                            ],
+
+                            ...[ //Ask to Repeat Egg, with NO Support
+                                ()=> this.displayRythm = true,
+                                ()=> this.f=0,
+                                ()=> s.while((this.f < TRAINING_EGG_REPS) & (!this.repeatTrial), [
+                                    ...[ //Prepare Trial
+                                        ()=> this.slide.setImage("slideReproduceBlank"),
+                                        ()=> this.trainingEgg.setImage(this.eggColor),
+                                    ],
+
+                                    ...[ //Wait for Rythm
+                                        ()=> waitRythm(s, this.rythm, this.trainingEgg.getPhaserImage(), ()=> {
+                                            this.sound.play(TAP_SOUND)
+                                        }, (rythmAccuracy)=>{this.rythmAccuracy = rythmAccuracy}),
+                                    ],
+
+                                    ...[// Check if Correct
+                                        ()=> s.if(this.rythmAccuracy < 0.3, [
+                                            ()=> this.slide.setImage("slideCorrectBlank"),
+                                            ()=> this.trainingEgg.setImage(`diamond`),
+                                            ()=> this.sound.play(DIAMOND_SOUND),
+                                        ]),
+                                        ()=> s.if(this.rythmAccuracy >= 0.3, [
+                                            ()=> this.slide.setImage("slideIncorrectBlank"),
+                                            ()=> this.trainingEgg.setImage(`${this.eggColor}Shell`),
+                                            ()=> this.sound.play(CRACK_SOUND),
+                                            ()=> this.repeatTrial = true,
+                                        ]),
+                                        ()=> s.wait(1500),
+                                    ],
+
+                                    ...[ //Log data
+                                        ()=> logData()
+                                    ],
+
+                                ()=> this.f++]),
+                            ],
+                        ]),
+                    ],
+                ]),
+            ],
+        ],
+
+        ...[ //Phase 2: AquisitionTest
+    
+            ...[ //Prepare Phase 2
+                ()=> this.stage = "AquisitionTest",
+                ()=> this.nextButton.hide(),
+                
+                ()=> this.eggProgress = {"eggBlue":0, "eggRed":0, "eggYellow":0},
+                ()=> this.eggColors = Object.keys(this.eggProgress),
+            ],
+
+            ...[ //Run Phase 2 for all Eggs in the Egg list
+                ()=> s.while(Object.keys(this.eggProgress).length > 0, [
+
+                    ...[ //Go through first set of randomly ordered eggs (each color contained once)
+                        ()=> s.wait(30),
+                        ()=> this.shuffleEggColors = shuffle(this.eggColors),
+                        ()=> s.while(this.shuffleEggColors.length > 0, [
+        
+                            ...[ //Get egg and rythm dots
+                                ()=> this.eggColor = this.shuffleEggColors.pop(),
+        
+                                ()=> this.rythm = EGG_RYTHM_DICT[this.eggColor],
+                                ()=> this.rythmDots = new RythmDots(this, WIDTH/2, HEIGHT*0.8, this.rythm),
+                                ()=> this.displayRythm = true,
+                
+                                ()=> s.if(this.eggProgress[this.eggColor] != 0, [ //If its first egg show memory aid (dots)
+                                    ()=> this.displayRythm = false,
+                                    ()=> this.rythmDots.hide(),
+                                ]),
+                            ],
+        
+                            ...[ //Set Egg Reproduce Slide
+                                ()=> this.slide.setImage("slideReproduceBlank"),
+                                ()=> this.trainingEgg.setImage(this.eggColor).show(),
+                            ],
+        
+                            ...[ //Wait for Rythm
+                                ()=> waitRythm(s, this.rythm, this.trainingEgg.getPhaserImage(), ()=> {
+                                    this.sound.play(TAP_SOUND);
+                                    
+                                    }, (rythmAccuracy)=>{this.rythmAccuracy = rythmAccuracy}),
+                
+                                ()=> this.rythmDots.destroy(),
+                            ],
+        
+                            ...[ //Check if correct, only if egg is still in game
+                                ()=> s.if(this.rythmAccuracy < 0.3, [
+                                    ()=> s.if( inArray(this.eggColor, Object.keys(this.eggProgress)), [
+                                        ()=> this.eggProgress[this.eggColor]++,
+                                    ]),
+                                    ()=> this.slide.setImage("slideCorrectBlank"),
+                                    ()=> this.trainingEgg.setImage(`diamond`),
+                                    ()=> this.sound.play(DIAMOND_SOUND),
+
+                                    ()=> console.log(this.eggProgress),
+        
+                                    ()=> s.if(this.eggProgress[this.eggColor] >= TRAINING_EGG_REPS+1, [ //+1 because of the practise trial with the dots shown
+                                        ()=> delete this.eggProgress[this.eggColor] //Mark as "learned"
+                                    ]),
+        
+                                ]),
+                                ()=> s.if(this.rythmAccuracy >= 0.3, [
+                                    ()=> s.if( inArray(this.eggColor, Object.keys(this.eggProgress)), [
+                                        ()=> this.eggProgress[this.eggColor] = 0,
+                                    ]),
+                                    ()=> this.slide.setImage("slideIncorrectBlank"),
+                                    ()=> this.trainingEgg.setImage(`${this.eggColor}Shell`),
+                                    ()=> this.sound.play(CRACK_SOUND),
+                                    ()=> this.repeatTrial = true,
+                                ]),
+        
+                                ()=> s.wait(1500),
+                            ],
+                        ]),
+                    ]
+                ]),
+            ],
+
+            ...[ //Log data
+                logData()
+            ],
+        ],
+
+        ...[ //Phase 3: EggHunt
+
+            ...[ //Prepare EggHunt
+                ()=> this.stage = "EggHunt1",
+                
+                ()=> this.shuffledEggSequence = randomizeSequence(Object.keys(EGG_RYTHM_DICT), 500),
+
+                ()=> console.log(this.shuffledEggSequence),
+
+                ()=> this.background = new PsyImage(this, WIDTH/2, HEIGHT/2, "background", 1, 1),
+                ()=> this.safe = this.add.image(WIDTH/2,HEIGHT - 60, "safe").setScale(0.2).setOrigin(0.5).setAlpha(0.8),
+
+                ()=> this.scoreText = this.add.text(WIDTH/2,HEIGHT - 60, 'Depot: 0', { fontSize: '50px', fill: '#FFF', align: 'center' , fontFamily: "calibri"}),
+                ()=> this.scoreText.setOrigin(0.5),
+
+                ()=> this.trainingEgg.destroy(),
+                ()=> document.body.style.backgroundColor = "black",
+                
+                ()=> this.eggProgress = {"eggBlue":0, "eggRed":0, "eggYellow":0, "eggCyan":0},
+                ()=> this.locationList = [{x: 1465, y: 600},{x: 748, y: 788},{x: 685, y: 931},{x: 1178, y: 601},{x: 1254, y: 773}],
+
+                ()=> this.score = 0
+            ],
+
+            ...[ //Run EggHunt 
+                ()=> this.t = 0,
+                ()=> s.while(Math.min(...getValues(this.eggProgress)) < GAME_EGG_REPS, [
+
+                    ...[ //Asynchronous Egg: Lifecycle
+                        ()=> s.asynch((s)=> s.insert([
+    
+                            ...[ //Prepare
+                                ()=> s.eggColor = this.shuffledEggSequence[this.t],
+                                ()=> s.rythm = EGG_RYTHM_DICT[s.eggColor],
+                                ()=> s.location = shuffle(this.locationList).pop(),
+                                ()=> s.egg = new PsyImage(this, s.location.x, s.location.y, s.eggColor, 1, 1, [0.5,0.5], true),
+
+                                ()=> s.hasHovered = false
+                            ],
+    
+                            ...[ //Wait for Rythm, or 
+
+                                ()=> s.eggInitTimeout = 1000 + Math.floor(Math.random() * 1000),
+                                ()=> this.timer = Date.now(),
+                                ()=> s.waitInput([
+                                    {timer:s.eggInitTimeout, func:()=>{s.timeHover = -1}},
+                                    {trigger:"HOVER", image:s.egg.getPhaserImage(), func:()=>{s.timeHover = (Date.now() - this.timer)}}]),
+
+                                ()=> waitRythm(s, s.rythm, s.egg.getPhaserImage(), ()=> this.sound.play(TAP_SOUND),
+                                                (rythmAccuracy, userRythm)=>{s.rythmAccuracy = rythmAccuracy; s.userRythm = userRythm}, 
+                                                1000, 1500),
+                            ],
+    
+                            ...[ //Evaluate Result
+    
+                                ()=> s.if(safeCompare(s.rythm, [1,999,1]), [
+                                    ()=> s.egg.hide(),
+                                    ()=> this.eggProgress[s.eggColor]++,
+                                ]),
+
+
+                                ()=> s.if(!safeCompare(s.rythm, [1,999,1]), [
+                                    ()=> s.if(s.rythmAccuracy == -1, [
+                                        ()=> s.egg.hide()
+                                    ]),
+
+                                    ()=> s.if(s.rythmAccuracy != -1, [
+                                        
+                                        ()=> s.if(s.rythmAccuracy < 0.3, [
+                                            ()=> s.if(s.rythmAccuracy != -1, [
+                                                ()=> s.egg.setImage(`diamond`),
+                                                ()=> this.sound.play(DIAMOND_SOUND),
+                                                ()=> this.score++,
+                                                ()=> this.scoreText.setText(`Depot: ${this.score}`),
+                                            ]),
+                                        ]),
+                    
+                                        ()=> s.if(s.rythmAccuracy >= 0.3, [
+                                            ()=> s.egg.setImage(`${s.eggColor}Shell`),
+                                            ()=> this.sound.play(CRACK_SOUND),
+                                        ]),
+
+                                        ()=> this.eggProgress[s.eggColor]++,
+                                    ]),
+                                ]),
+    
+                                ()=> s.wait(1000),
+                            ],
+                    
+                            ...[ //Finish off
+                                ()=> s.egg.destroy(),    
+            
+                                ()=> s.wait(1000),
+                                ()=> this.locationList.push(s.location),
+                            ],
+
+                            ...[ //Collect Data
+                                ()=> this.eggColor = s.eggColor,
+                                ()=> this.rythm = s.rythm,
+                                ()=> this.location = s.location,
+                                ()=> this.rythmAccuracy = s.rythmAccuracy,
+                                ()=> this.userRythm = s.userRythm,
+                                ()=> this.timeHover = s.timeHover,
+                                ()=> this.eggProgressEgg = this.eggProgress[s.eggColor],
+
+                                ()=> logData()
+                            ]
+                        ]))
+                    ],
+                    s.wait(3000),
+                ()=> this.t++]),
+            ]
+
+        ],
+
+
+
+        () => exportToCsv(this.columns, this.data)
 
     ])
         
@@ -747,3 +1252,4 @@ function update(time, delta)
     this.debugText.setText(`
 fps: ${Math.round(delta)}`)
 }
+
