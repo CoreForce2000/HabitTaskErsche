@@ -818,7 +818,6 @@ function runEggHunt(scope, s, eggRythmDict, iterationsPerEgg) {
         ...[ //Phase 3: EggHunt
 
             ...[ //Prepare EggHunt
-                ()=> scope.stage = "EggHunt1",
                 
                 ()=> scope.shuffledEggSequence = randomizeSequence(Object.keys(eggRythmDict), 500),
 
@@ -871,35 +870,37 @@ function runEggHunt(scope, s, eggRythmDict, iterationsPerEgg) {
                             ...[ //Evaluate Result
     
 
-                                ()=> s.if(s.rythmAccuracy == -1, [
-                                    ()=> s.egg.hide()
+                                ()=> s.if(safeCompare(s.rythm, [1,999,999,1]), [
+                                    ()=> s.egg.hide(),
+                                    ()=> scope.eggProgress[s.eggColor]++,
                                 ]),
 
-                                ()=> s.if(s.rythmAccuracy != -1, [
-                                    
-                                    ()=> s.if(s.rythmAccuracy < 0.3, [
-                                        ()=> s.if(s.rythmAccuracy != -1, [
-                                            ()=> s.if(safeCompare(s.rythm, [1,999,1]), [
+                                ()=> s.if(!safeCompare(s.rythm, [1,999,999,1]), [
+                                    ()=> s.if(s.rythmAccuracy == -1, [
+                                        ()=> s.egg.hide(),
+                                    ]),
+    
+                                    ()=> s.if(s.rythmAccuracy != -1, [
+                                        
+                                        ()=> s.if(s.rythmAccuracy < 0.3, [
+                                            ()=> s.if(s.rythmAccuracy != -1, [
                                                 ()=> s.egg.setImage(`diamond`),
                                                 ()=> scope.sound.play(DIAMOND_SOUND),
                                                 ()=> scope.score++,
                                                 ()=> scope.scoreText.setText(`Depot: ${scope.score}`),
                                             ]),
-                                            
-                                            ()=> s.if(!safeCompare(s.rythm, [1,999,1]), [
-                                                ()=> s.egg.hide(),
-                                                ()=> scope.eggProgress[s.eggColor]++,
-                                            ]),
                                         ]),
+                    
+                                        ()=> s.if(s.rythmAccuracy >= 0.3, [
+                                            ()=> s.egg.setImage(`${s.eggColor}Shell`),
+                                            ()=> scope.sound.play(CRACK_SOUND),
+                                        ]),
+    
+                                        ()=> scope.eggProgress[s.eggColor]++,
                                     ]),
-                
-                                    ()=> s.if(s.rythmAccuracy >= 0.3, [
-                                        ()=> s.egg.setImage(`${s.eggColor}Shell`),
-                                        ()=> scope.sound.play(CRACK_SOUND),
-                                    ]),
-
-                                    ()=> scope.eggProgress[s.eggColor]++,
                                 ]),
+
+
 
                                 
     
@@ -922,8 +923,10 @@ function runEggHunt(scope, s, eggRythmDict, iterationsPerEgg) {
                                 ()=> scope.timeHover = s.timeHover,
                                 ()=> scope.eggProgressEgg = scope.eggProgress[s.eggColor],
 
-                                ()=> logData()
-                            ]
+                                ()=> scope.logData()
+                            ],
+
+                            console.log(scope.eggProgress)
                         ]))
                     ],
                     s.wait(3000),
@@ -939,10 +942,6 @@ function runEggHunt(scope, s, eggRythmDict, iterationsPerEgg) {
 
 
 
-
-
-
-var EGG_RYTHM_DICT = {"eggBlue":[2,1,2,1], "eggRed":[2,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,1]}
 
 var EGG_RYTHM_TRAINING = {"eggBlue":[2,1,2,1], "eggRed":[2,1,2,2], "eggYellow":[1,2,2,1]}
 
@@ -974,7 +973,7 @@ function create ()
     this.columns = []
 
     this.data = []
-    var logData = ()=> {
+    this.logData = ()=> {
 
         var rawData = {
             "Timestamp" : getTimestamp(),
@@ -989,7 +988,7 @@ function create ()
 
             "USER.Time_Hover" : this.timeHover,
             "USER.Time_Rythm_Start" : this.userRythm[0],
-            "USER.Rythm_Applied" : JSON.stringify(this.userRythm.slice(1)),
+            "USER.Rythm_Applied" : JSON.stringify(this.userRythm.slice(1)).replace(/,/g, '-'),
             "USER.Rythm_Error" : this.rythmAccuracy,
             
         }
@@ -1032,7 +1031,7 @@ function create ()
             ()=> s.waitClick(this.nextButton.getPhaserImage()),
         ],
         
-        ... [ //Phase 1: Aquisition
+        void [ //Phase 1: Aquisition
 
             ...[ //Prepare Phase 1
                 ()=> this.stage = "Aquisition",
@@ -1115,7 +1114,7 @@ function create ()
                                     ],
 
                                     ...[ //Log data
-                                        ()=> logData()
+                                        ()=> this.logData()
                                     ],
 
                                 ()=> this.f++]),
@@ -1152,7 +1151,7 @@ function create ()
                                     ],
 
                                     ...[ //Log data
-                                        ()=> logData()
+                                        ()=> this.logData()
                                     ],
 
                                 ()=> this.f++]),
@@ -1163,7 +1162,7 @@ function create ()
             ],
         ],
 
-        ...[ //Phase 2: AquisitionTest
+        void [ //Phase 2: AquisitionTest
     
             ...[ //Prepare Phase 2
                 ()=> this.stage = "AquisitionTest",
@@ -1217,7 +1216,6 @@ function create ()
                                     ()=> this.trainingEgg.setImage(`diamond`),
                                     ()=> this.sound.play(DIAMOND_SOUND),
 
-                                    ()=> console.log(this.eggProgress),
         
                                     ()=> s.if(this.eggProgress[this.eggColor] >= TRAINING_EGG_REPS+1, [ //+1 because of the practise trial with the dots shown
                                         ()=> delete this.eggProgress[this.eggColor] //Mark as "learned"
@@ -1242,20 +1240,25 @@ function create ()
             ],
 
             ...[ //Log data
-                logData()
+                this.logData()
             ],
         ],
 
-
-        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,1]}, ),
+        ()=> this.stage = "EggHunt1",
+        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,999,1]}, 1),
 
         ()=> this.background.destroy(),
+        ()=> this.safe.destroy(),
         ()=> this.slide.setImage("white"),
-        ()=> document.body.style.backgroundColor = "black",
-        ()=> scope.scoreText = scope.add.text(WIDTH/2,HEIGHT/2, `Some of the eggs may now not yield a diamond anymore.
-As before, please try to collect as many diamonds as possible.`, { fontSize: '50px', fill: '#000', align: 'center' , fontFamily: "calibri"}),
+        ()=> document.body.style.backgroundColor = "white",
+        ()=> this.add.text(WIDTH/2,HEIGHT/2, `Some of the eggs may now not yield a diamond anymore.
+As before, please try to collect as many diamonds as possible.`, { fontSize: '50px', fill: '#000', align: 'center' , fontFamily: "calibri"}).setOrigin(0.5, 0.5),
+        ()=> this.nextButton.show(),
+        ()=> s.waitInput({trigger:"CLICK", image:this.nextButton.getPhaserImage()}),
+        ()=> this.nextButton.hide(),
 
-        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,999, 999,1], "eggYellow":[1,999, 999,1], "eggCyan":[1,999, 999,1]}),
+        ()=> this.stage = "EggHunt2",
+        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,999, 999,1], "eggYellow":[1,999, 999,1], "eggCyan":[1,999, 999,1]}, 1),
 
 
         () => exportToCsv(this.columns, this.data)
