@@ -5,7 +5,7 @@ const TAP_SOUND = "chisel"
 const DIAMOND_SOUND = "diamond"
 const CRACK_SOUND = "glass_break"
 
-const TRAINING_EGG_REPS = 3
+const TRAINING_EGG_REPS = 5
 const GAME_EGG_REPS = 10
 
 const EGG_LOC = {x:WIDTH*0.5, y:HEIGHT*0.46}
@@ -1031,7 +1031,7 @@ function create ()
             ()=> s.waitClick(this.nextButton.getPhaserImage()),
         ],
         
-        void [ //Phase 1: Aquisition
+        ... [ //Phase 1: Aquisition
 
             ...[ //Prepare Phase 1
                 ()=> this.stage = "Aquisition",
@@ -1162,7 +1162,7 @@ function create ()
             ],
         ],
 
-        void [ //Phase 2: AquisitionTest
+        ... [ //Phase 2: AquisitionTest
     
             ...[ //Prepare Phase 2
                 ()=> this.stage = "AquisitionTest",
@@ -1245,7 +1245,7 @@ function create ()
         ],
 
         ()=> this.stage = "EggHunt1",
-        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,999,1]}, 1),
+        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,999,1]}, 40),
 
         ()=> this.background.destroy(),
         ()=> this.safe.destroy(),
@@ -1258,7 +1258,7 @@ As before, please try to collect as many diamonds as possible.`, { fontSize: '50
         ()=> this.nextButton.hide(),
 
         ()=> this.stage = "EggHunt2",
-        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,999, 999,1], "eggYellow":[1,999, 999,1], "eggCyan":[1,999, 999,1]}, 1),
+        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,999, 999,1], "eggYellow":[1,999, 999,1], "eggCyan":[1,999, 999,1]}, 40),
 
 
         () => exportToCsv(this.columns, this.data)
