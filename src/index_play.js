@@ -812,6 +812,133 @@ function waitRythm(s, rythm, image, onClick, returnFunc, initTimeout=99999, time
 
 
 
+function runEggHunt(scope, s, eggRythmDict, iterationsPerEgg) {
+    s.insert([
+        
+        ...[ //Phase 3: EggHunt
+
+            ...[ //Prepare EggHunt
+                ()=> scope.stage = "EggHunt1",
+                
+                ()=> scope.shuffledEggSequence = randomizeSequence(Object.keys(eggRythmDict), 500),
+
+                ()=> console.log(scope.shuffledEggSequence),
+
+                ()=> scope.background = new PsyImage(scope, WIDTH/2, HEIGHT/2, "background", 1, 1),
+                ()=> scope.safe = scope.add.image(WIDTH/2,HEIGHT - 60, "safe").setScale(0.2).setOrigin(0.5).setAlpha(0.8),
+
+                ()=> scope.scoreText = scope.add.text(WIDTH/2,HEIGHT - 60, 'Depot: 0', { fontSize: '50px', fill: '#FFF', align: 'center' , fontFamily: "calibri"}),
+                ()=> scope.scoreText.setOrigin(0.5),
+
+                ()=> scope.trainingEgg.destroy(),
+                ()=> document.body.style.backgroundColor = "black",
+                
+                ()=> scope.eggProgress = {"eggBlue":0, "eggRed":0, "eggYellow":0, "eggCyan":0},
+                ()=> scope.locationList = [{x: 1465, y: 600},{x: 748, y: 788},{x: 685, y: 931},{x: 1178, y: 601},{x: 1254, y: 773}],
+
+                ()=> scope.score = 0
+            ],
+
+            ...[ //Run EggHunt 
+                ()=> scope.t = 0,
+                ()=> s.while(Math.min(...getValues(scope.eggProgress)) < iterationsPerEgg, [
+
+                    ...[ //Asynchronous Egg: Lifecycle
+                        ()=> s.asynch((s)=> s.insert([
+    
+                            ...[ //Prepare
+                                ()=> s.eggColor = scope.shuffledEggSequence[scope.t],
+                                ()=> s.rythm = eggRythmDict[s.eggColor],
+                                ()=> s.location = shuffle(scope.locationList).pop(),
+                                ()=> s.egg = new PsyImage(scope, s.location.x, s.location.y, s.eggColor, 1, 1, [0.5,0.5], true),
+
+                                ()=> s.hasHovered = false
+                            ],
+    
+                            ...[ //Wait for Rythm, or 
+
+                                ()=> s.eggInitTimeout = 1000 + Math.floor(Math.random() * 1000),
+                                ()=> scope.timer = Date.now(),
+                                ()=> s.waitInput([
+                                    {timer:s.eggInitTimeout, func:()=>{s.timeHover = -1}},
+                                    {trigger:"HOVER", image:s.egg.getPhaserImage(), func:()=>{s.timeHover = (Date.now() - scope.timer)}}]),
+
+                                ()=> waitRythm(s, s.rythm, s.egg.getPhaserImage(), ()=> scope.sound.play(TAP_SOUND),
+                                                (rythmAccuracy, userRythm)=>{s.rythmAccuracy = rythmAccuracy; s.userRythm = userRythm}, 
+                                                1000, 1500),
+                            ],
+    
+                            ...[ //Evaluate Result
+    
+
+                                ()=> s.if(s.rythmAccuracy == -1, [
+                                    ()=> s.egg.hide()
+                                ]),
+
+                                ()=> s.if(s.rythmAccuracy != -1, [
+                                    
+                                    ()=> s.if(s.rythmAccuracy < 0.3, [
+                                        ()=> s.if(s.rythmAccuracy != -1, [
+                                            ()=> s.if(safeCompare(s.rythm, [1,999,1]), [
+                                                ()=> s.egg.setImage(`diamond`),
+                                                ()=> scope.sound.play(DIAMOND_SOUND),
+                                                ()=> scope.score++,
+                                                ()=> scope.scoreText.setText(`Depot: ${scope.score}`),
+                                            ]),
+                                            
+                                            ()=> s.if(!safeCompare(s.rythm, [1,999,1]), [
+                                                ()=> s.egg.hide(),
+                                                ()=> scope.eggProgress[s.eggColor]++,
+                                            ]),
+                                        ]),
+                                    ]),
+                
+                                    ()=> s.if(s.rythmAccuracy >= 0.3, [
+                                        ()=> s.egg.setImage(`${s.eggColor}Shell`),
+                                        ()=> scope.sound.play(CRACK_SOUND),
+                                    ]),
+
+                                    ()=> scope.eggProgress[s.eggColor]++,
+                                ]),
+
+                                
+    
+                                ()=> s.wait(1000),
+                            ],
+                    
+                            ...[ //Finish off
+                                ()=> s.egg.destroy(),    
+            
+                                ()=> s.wait(1000),
+                                ()=> scope.locationList.push(s.location),
+                            ],
+
+                            ...[ //Collect Data
+                                ()=> scope.eggColor = s.eggColor,
+                                ()=> scope.rythm = s.rythm,
+                                ()=> scope.location = s.location,
+                                ()=> scope.rythmAccuracy = s.rythmAccuracy,
+                                ()=> scope.userRythm = s.userRythm,
+                                ()=> scope.timeHover = s.timeHover,
+                                ()=> scope.eggProgressEgg = scope.eggProgress[s.eggColor],
+
+                                ()=> logData()
+                            ]
+                        ]))
+                    ],
+                    s.wait(3000),
+                ()=> scope.t++]),
+            ]
+        ],
+    ])
+}
+
+
+
+
+
+
+
 
 
 
@@ -905,7 +1032,7 @@ function create ()
             ()=> s.waitClick(this.nextButton.getPhaserImage()),
         ],
         
-        void [ //Phase 1: Aquisition
+        ... [ //Phase 1: Aquisition
 
             ...[ //Prepare Phase 1
                 ()=> this.stage = "Aquisition",
@@ -1119,121 +1246,16 @@ function create ()
             ],
         ],
 
-        ...[ //Phase 3: EggHunt
 
-            ...[ //Prepare EggHunt
-                ()=> this.stage = "EggHunt1",
-                
-                ()=> this.shuffledEggSequence = randomizeSequence(Object.keys(EGG_RYTHM_DICT), 500),
+        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,1,2,2], "eggYellow":[1,2,2,1], "eggCyan":[1,999,1]}, ),
 
-                ()=> console.log(this.shuffledEggSequence),
+        ()=> this.background.destroy(),
+        ()=> this.slide.setImage("white"),
+        ()=> document.body.style.backgroundColor = "black",
+        ()=> scope.scoreText = scope.add.text(WIDTH/2,HEIGHT/2, `Some of the eggs may now not yield a diamond anymore.
+As before, please try to collect as many diamonds as possible.`, { fontSize: '50px', fill: '#000', align: 'center' , fontFamily: "calibri"}),
 
-                ()=> this.background = new PsyImage(this, WIDTH/2, HEIGHT/2, "background", 1, 1),
-                ()=> this.safe = this.add.image(WIDTH/2,HEIGHT - 60, "safe").setScale(0.2).setOrigin(0.5).setAlpha(0.8),
-
-                ()=> this.scoreText = this.add.text(WIDTH/2,HEIGHT - 60, 'Depot: 0', { fontSize: '50px', fill: '#FFF', align: 'center' , fontFamily: "calibri"}),
-                ()=> this.scoreText.setOrigin(0.5),
-
-                ()=> this.trainingEgg.destroy(),
-                ()=> document.body.style.backgroundColor = "black",
-                
-                ()=> this.eggProgress = {"eggBlue":0, "eggRed":0, "eggYellow":0, "eggCyan":0},
-                ()=> this.locationList = [{x: 1465, y: 600},{x: 748, y: 788},{x: 685, y: 931},{x: 1178, y: 601},{x: 1254, y: 773}],
-
-                ()=> this.score = 0
-            ],
-
-            ...[ //Run EggHunt 
-                ()=> this.t = 0,
-                ()=> s.while(Math.min(...getValues(this.eggProgress)) < GAME_EGG_REPS, [
-
-                    ...[ //Asynchronous Egg: Lifecycle
-                        ()=> s.asynch((s)=> s.insert([
-    
-                            ...[ //Prepare
-                                ()=> s.eggColor = this.shuffledEggSequence[this.t],
-                                ()=> s.rythm = EGG_RYTHM_DICT[s.eggColor],
-                                ()=> s.location = shuffle(this.locationList).pop(),
-                                ()=> s.egg = new PsyImage(this, s.location.x, s.location.y, s.eggColor, 1, 1, [0.5,0.5], true),
-
-                                ()=> s.hasHovered = false
-                            ],
-    
-                            ...[ //Wait for Rythm, or 
-
-                                ()=> s.eggInitTimeout = 1000 + Math.floor(Math.random() * 1000),
-                                ()=> this.timer = Date.now(),
-                                ()=> s.waitInput([
-                                    {timer:s.eggInitTimeout, func:()=>{s.timeHover = -1}},
-                                    {trigger:"HOVER", image:s.egg.getPhaserImage(), func:()=>{s.timeHover = (Date.now() - this.timer)}}]),
-
-                                ()=> waitRythm(s, s.rythm, s.egg.getPhaserImage(), ()=> this.sound.play(TAP_SOUND),
-                                                (rythmAccuracy, userRythm)=>{s.rythmAccuracy = rythmAccuracy; s.userRythm = userRythm}, 
-                                                1000, 1500),
-                            ],
-    
-                            ...[ //Evaluate Result
-    
-                                ()=> s.if(safeCompare(s.rythm, [1,999,1]), [
-                                    ()=> s.egg.hide(),
-                                    ()=> this.eggProgress[s.eggColor]++,
-                                ]),
-
-
-                                ()=> s.if(!safeCompare(s.rythm, [1,999,1]), [
-                                    ()=> s.if(s.rythmAccuracy == -1, [
-                                        ()=> s.egg.hide()
-                                    ]),
-
-                                    ()=> s.if(s.rythmAccuracy != -1, [
-                                        
-                                        ()=> s.if(s.rythmAccuracy < 0.3, [
-                                            ()=> s.if(s.rythmAccuracy != -1, [
-                                                ()=> s.egg.setImage(`diamond`),
-                                                ()=> this.sound.play(DIAMOND_SOUND),
-                                                ()=> this.score++,
-                                                ()=> this.scoreText.setText(`Depot: ${this.score}`),
-                                            ]),
-                                        ]),
-                    
-                                        ()=> s.if(s.rythmAccuracy >= 0.3, [
-                                            ()=> s.egg.setImage(`${s.eggColor}Shell`),
-                                            ()=> this.sound.play(CRACK_SOUND),
-                                        ]),
-
-                                        ()=> this.eggProgress[s.eggColor]++,
-                                    ]),
-                                ]),
-    
-                                ()=> s.wait(1000),
-                            ],
-                    
-                            ...[ //Finish off
-                                ()=> s.egg.destroy(),    
-            
-                                ()=> s.wait(1000),
-                                ()=> this.locationList.push(s.location),
-                            ],
-
-                            ...[ //Collect Data
-                                ()=> this.eggColor = s.eggColor,
-                                ()=> this.rythm = s.rythm,
-                                ()=> this.location = s.location,
-                                ()=> this.rythmAccuracy = s.rythmAccuracy,
-                                ()=> this.userRythm = s.userRythm,
-                                ()=> this.timeHover = s.timeHover,
-                                ()=> this.eggProgressEgg = this.eggProgress[s.eggColor],
-
-                                ()=> logData()
-                            ]
-                        ]))
-                    ],
-                    s.wait(3000),
-                ()=> this.t++]),
-            ]
-
-        ],
-
+        ()=> runEggHunt(this, s, {"eggBlue":[2,1,2,1], "eggRed":[1,999, 999,1], "eggYellow":[1,999, 999,1], "eggCyan":[1,999, 999,1]}),
 
 
         () => exportToCsv(this.columns, this.data)
